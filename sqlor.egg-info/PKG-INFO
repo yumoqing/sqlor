@@ -1,0 +1,14 @@
+Metadata-Version: 1.1
+Name: sqlor
+Version: 0.0.1
+Summary: sqlor
+Home-page: UNKNOWN
+Author: yumoqing
+Author-email: yumoqing@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: any
+Classifier: Development Status :: 1 - Alpha
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python3.5
+Classifier: Topic :: SQL execute :: Libraries :: Python Modules
