@@ -2,7 +2,7 @@
 
 SQLOR is a database api for python3, it is base on the python's DBAPI2 
 
-## Feature
+## Features
 
 * Multiple database supported(Oracle, MySql, Postgresql, SQL Server
 * Both asynchronous API & synchronous API supported
