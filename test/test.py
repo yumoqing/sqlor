@@ -31,7 +31,7 @@ dbs={
 loop = asyncio.get_event_loop()
 pool = DBPools(dbs,loop=loop)
 
-async def testfunc():
+async def testfunc1():
 	@pool.runSQL
 	def sql(db,ns,callback):
 		return {
@@ -39,4 +39,14 @@ async def testfunc():
 	}
 	x  = await sql('cfae',{},print)
 
-loop.run_until_complete(testfunc())
+async def testfunc2():
+	@pool.runSQLResultFields
+	def sql(db,NS):
+		return {
+		"sql_string":"select * from product",
+	}
+	x  = await sql('cfae',{})
+	print(x)
+
+loop.run_until_complete(testfunc1())
+loop.run_until_complete(testfunc2())

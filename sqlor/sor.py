@@ -309,7 +309,7 @@ class SQLor(object):
 				self.recs.append(rec)
 
 		c = Cnt()
-		await self.sqlIterator(cnt_desc,NS,c.handler)
+		await self.runSQL(cnt_desc,NS,c.handler)
 		print(c.recs[0])
 		t = c.recs[0]['rcnt']
 		return t
@@ -341,8 +341,14 @@ class SQLor(object):
 				self.recs.append(rec)
 
 		c = Cnt()
-		await self.sqlIterator(paging_desc,NS,c.handler)
+		await self.runSQL(paging_desc,NS,c.handler)
 		return c.recs
+
+	async def resultFields(self,desc,NS):
+		NS.update(rows=1,page=1)
+		r = await self.pagingdata(desc,NS)
+		ret = [ {'name':i[0],'type':i[1]} for i in self.cur.description ]
+		return ret
 		
 	async def runSQL(self,desc,NS,callback,**kw):
 		class RecordHandler:

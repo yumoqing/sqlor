@@ -210,42 +210,52 @@ class DBPools:
 		@wraps(func)
 		async def wrap_func(dbname,NS,callback,**kw):
 			sor = await self.getSqlor(dbname)
-			desc = func(dbname,NS,callback,**kw)
 			try:
+				desc = func(dbname,NS,callback,**kw)
 				ret = await sor.runSQL(desc,NS,callback,**kw)
 			except Exception as e:
 				print('error:',e)
 				raise e
 			finally:
 				await self.freeSqlor(sor)
+				return ret
 		return wrap_func
 
 	def runSQLPaging(self,func):
 		@wraps(func)
 		async def wrap_func(dbname,NS,**kw):
 			sor = await self.getSqlor(dbname)
-			desc = func(dbname,NS,**kw)
-			total = await sor.record_count(desc,NS)
-			recs = await sor.pagingdata(desc,NS)
-			data = {
-				"total":total,
-				"rows":recs
-			}
-			print(len(recs),'records return')
-			await self.freeSqlor(sor)
-			return data
+			try:
+				desc = func(dbname,NS,**kw)
+				total = await sor.record_count(desc,NS)
+				recs = await sor.pagingdata(desc,NS)
+				data = {
+					"total":total,
+					"rows":recs
+				}
+				print(len(recs),'records return')
+				return data
+			except Exception as e:
+				print('error',e)
+				raise e
+			finally:
+				await self.freeSqlor(sor)
 		return wrap_func
 
-	async def runSQLResultFields(self, dbname,NS,**kwargs):
-			sor = self.getSqlor(dbname)
-			desc = func(dbname,NS,**kw)
-			conn = await self._aquireConn(dbname)
-			async with conn.cursor() as cur:
-				sor.setCursor(conn,cur)
-				ret=await sor.sqlIterator(desc,NS)
-				ret = [ {'name':i[0],'type':i[1]} for i in cur.description ]
+	def runSQLResultFields(self, func):
+		@wraps(func)
+		async def wrap_func(dbname,NS,**kw):
+			sor = await self.getSqlor(dbname)
+			try:
+				desc = func(dbname,NS,**kw)
+				ret = await sor.resultFields(desc,NS)
 				return ret
-			await self._releaseConn(dbname,conn)
+			except Exception as e:
+				print('error=',e)
+				raise e
+			finally:
+				await self.freeSqlor(sor)
+		return wrap_func
 
 	async def getTables(self,dbname):
 		@self.inSqlor
