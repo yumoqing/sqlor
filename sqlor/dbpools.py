@@ -1,6 +1,5 @@
 
 import asyncio
-from queue import Queue
 from functools import wraps 
 import codecs
 
@@ -104,21 +103,20 @@ class ConnectionPool(object):
 		self.driver = myImport(self.dbdesc['driver'])
 		self.maxconn = dbdesc.get('maxconn',5)
 		self.maxuse = dbdesc.get('maxuse',1000)
-		self._pool = Queue(self.maxconn)
-		self._fillPool()
+		self._pool = asyncio.Queue(self.maxconn)
 		self.using = []
 		self.use_cnt = 0
 		self.max_use = 1000
 	
-	def _fillPool(self):
+	async def _fillPool(self):
 		for i in range(self.maxconn):
-			lc = self.connect()
+			lc = await self.connect()
 			i = i + 1
 	
-	def connect(self):
+	async def connect(self):
 		lc = LifeConnect(self.driver.connect,self.dbdesc['kwargs'],
 				use_max=self.maxuse,async_mode=self.async_mode)
-		self._pool.put(lc)
+		await self._pool.put(lc)
 		return lc
 
 	def isEmpty(self):
@@ -128,7 +126,7 @@ class ConnectionPool(object):
 		return self._pool.full()
 		
 	async def aquire(self):
-		lc = self._pool.get()
+		lc = await self._pool.get()
 		self.using.append(lc)
 		conn = await lc.use()
 		return conn
@@ -136,7 +134,7 @@ class ConnectionPool(object):
 	async def release(self,conn):
 		lc = await LifeConnect.free(conn)
 		self.using = [c for c in self.using if c != lc ]
-		self._pool.put(lc)
+		await self._pool.put(lc)
 	
 @SingletonDecorator
 class DBPools:
@@ -165,6 +163,7 @@ class DBPools:
 		p = self._cpools.get(dbname)
 		if p == None:
 			p = ConnectionPool(self.databases.get(dbname),self.loop)
+			await p._fillPool()
 			self._cpools[dbname] = p
 		conn = await p.aquire()
 		if self.isAsyncDriver(dbname):
@@ -233,7 +232,6 @@ class DBPools:
 					"total":total,
 					"rows":recs
 				}
-				print(len(recs),'records return')
 				return data
 			except Exception as e:
 				print('error',e)

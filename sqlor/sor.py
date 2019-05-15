@@ -310,7 +310,6 @@ class SQLor(object):
 
 		c = Cnt()
 		await self.runSQL(cnt_desc,NS,c.handler)
-		print(c.recs[0])
 		t = c.recs[0]['rcnt']
 		return t
 
