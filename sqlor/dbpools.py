@@ -207,11 +207,15 @@ class DBPools:
 				
 	def runSQL(self,func):
 		@wraps(func)
-		async def wrap_func(dbname,NS,callback,**kw):
+		async def wrap_func(dbname,NS,callback=None,**kw):
 			sor = await self.getSqlor(dbname)
 			try:
-				desc = func(dbname,NS,callback,**kw)
+				desc = func(dbname,NS,callback=callback,**kw)
 				ret = await sor.runSQL(desc,NS,callback,**kw)
+				if NS.get('dummy'):
+					return NS['dummy']
+				else:
+					return []
 			except Exception as e:
 				print('error:',e)
 				raise e
@@ -276,6 +280,13 @@ class DBPools:
 			return  ret
 		return await _getTablePrimaryKey(None,dbname,tblname)
 		
+	async def getTableIndexes(self,dbname,tblname):
+		@self.inSqlor
+		async def _getTablePrimaryKey(sor,dbname,tblname):
+			ret = await sor.indexes(tblname)
+			return  ret
+		return await _getTablePrimaryKey(None,dbname,tblname)
+
 	async def getTableForignKeys(self,dbname,tblname):
 		@self.inSqlor
 		async def _getTableForignKeys(sor,dbname,tblname):
