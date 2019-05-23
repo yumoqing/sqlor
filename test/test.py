@@ -1,6 +1,7 @@
 import asyncio
 
 from sqlor.dbpools  import DBPools
+from sqlor.records import Records
 
 dbs={
         "aiocfae":{
@@ -37,16 +38,23 @@ async def testfunc1():
 		return {
 		"sql_string":"select * from product",
 	}
-	x  = await sql('cfae',{},print)
+	recs = Records()
+	x  = await sql('cfae',{},recs.add)
+	print('--------------%s---------------' % x)
+	for r in recs:
+		print(type(r),r)
 
 async def testfunc2():
 	@pool.runSQLResultFields
-	def sql(db,NS):
+	def sql(db,ns,callback=None):
 		return {
 		"sql_string":"select * from product",
 	}
-	x  = await sql('cfae',{})
-	print(x)
+	recs = Records()
+	x  = await sql('cfae',{},callback=recs.add)
+	print('-------%s------' % x)
+	for i in recs._records:
+		print("--",i)
 
 loop.run_until_complete(testfunc1())
 loop.run_until_complete(testfunc2())

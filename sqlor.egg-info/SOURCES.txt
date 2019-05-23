@@ -12,6 +12,7 @@ sqlor/mssqlor.py
 sqlor/mysqlor.py
 sqlor/oracleor.py
 sqlor/postgresqlor.py
+sqlor/records.py
 sqlor/sor.py
 sqlor/sqlite3or.py
 sqlor.egg-info/PKG-INFO
