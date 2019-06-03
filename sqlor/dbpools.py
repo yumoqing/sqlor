@@ -196,9 +196,11 @@ class DBPools:
 			sor = await self.getSqlor(dbname)
 			try:
 				ret = await func(sor,dbname,*args,**kw)
+				await sor.conn.commit()
 				return ret
 			except Exception as e:
 				print('error',sor)
+				sor.conn.rollback()
 				raise e
 			finally:
 				await self.freeSqlor(sor)
@@ -209,19 +211,21 @@ class DBPools:
 		@wraps(func)
 		async def wrap_func(dbname,NS,callback=None,**kw):
 			sor = await self.getSqlor(dbname)
+			ret = None
 			try:
 				desc = func(dbname,NS,callback=callback,**kw)
 				ret = await sor.runSQL(desc,NS,callback,**kw)
+				await sor.conn.commit()
 				if NS.get('dummy'):
 					return NS['dummy']
 				else:
 					return []
 			except Exception as e:
 				print('error:',e)
+				await sor.conn.rollback()
 				raise e
 			finally:
 				await self.freeSqlor(sor)
-				return ret
 		return wrap_func
 
 	def runSQLPaging(self,func):

@@ -160,14 +160,14 @@ class SQLor(object):
 		markedSQL,datas = self.maskingSQL(sql,NS)
 		datas = self.dataConvert(datas)
 		try:
-			markedSQL = markedSQL.encode('utf8')
+			# markedSQL = markedSQL.encode('utf8')
 			if self.async_mode:
 				await cursor.execute(markedSQL,datas)
 			else:
 				cursor.execute(markedSQL,datas)
 
 		except Exception as e:
-			print( "markedSQL=",markedSQL,datas,e)
+			print( "markedSQL=",markedSQL,':',datas,':',e)
 			raise e
 		return 
 			
