@@ -9,7 +9,8 @@ from setuptools import setup, find_packages
 # python setup.py bdist_egg generate a egg file
 # Release information about eway
 
-version = "0.0.1"
+version = "0.0.2"
+name = "sqlor"
 description = "sqlor"
 author = "yumoqing"
 email = "yumoqing@gmail.com"
@@ -17,26 +18,27 @@ email = "yumoqing@gmail.com"
 packages=find_packages()
 package_data = {}
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
-    name="sqlor",
+    name=name,
+	description = description,
     version=version,
-    
-    # uncomment the following lines if you fill them out in release.py
-    description=description,
     author=author,
     author_email=email,
-   
     install_requires=[
     ],
     packages=packages,
     package_data=package_data,
     keywords = [
     ],
+	url="https://github.com/yumoqing/sqlor",
+	long_description=long_description,
+	long_description_content_type="text/markdown",
     classifiers = [
-        'Development Status :: 1 - Alpha',
         'Operating System :: OS Independent',
-        'Programming Language :: Python3.5',
-        'Topic :: SQL execute :: Libraries :: Python Modules',
+        'Programming Language :: Python :: 3',
+		'License :: OSI Approved :: MIT License',
     ],
-	platforms= 'any'
 )

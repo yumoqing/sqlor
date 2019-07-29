@@ -209,11 +209,11 @@ class DBPools:
 				
 	def runSQL(self,func):
 		@wraps(func)
-		async def wrap_func(dbname,NS,callback=None,**kw):
+		async def wrap_func(dbname,NS,*,callback=None,**kw):
 			sor = await self.getSqlor(dbname)
 			ret = None
 			try:
-				desc = func(dbname,NS,callback=callback,**kw)
+				desc = await func(dbname,NS,callback=callback,**kw)
 				ret = await sor.runSQL(desc,NS,callback,**kw)
 				await sor.conn.commit()
 				if NS.get('dummy'):
@@ -233,14 +233,14 @@ class DBPools:
 		async def wrap_func(dbname,NS,**kw):
 			sor = await self.getSqlor(dbname)
 			try:
-				desc = func(dbname,NS,**kw)
+				desc = await func(dbname,NS,**kw)
 				total = await sor.record_count(desc,NS)
 				recs = await sor.pagingdata(desc,NS)
 				data = {
 					"total":total,
 					"rows":recs
 				}
-				return data
+				return DictObject(**data)
 			except Exception as e:
 				print('error',e)
 				raise e
@@ -253,7 +253,7 @@ class DBPools:
 		async def wrap_func(dbname,NS,**kw):
 			sor = await self.getSqlor(dbname)
 			try:
-				desc = func(dbname,NS,**kw)
+				desc = await func(dbname,NS,**kw)
 				ret = await sor.resultFields(desc,NS)
 				return ret
 			except Exception as e:
@@ -295,6 +295,6 @@ class DBPools:
 		@self.inSqlor
 		async def _getTableForignKeys(sor,dbname,tblname):
 			ret = await sor.fkeys(tblname)
-			return  ret
+			return ret
 		return await _getTableForignKeys(None,dbname,tblname)
 	

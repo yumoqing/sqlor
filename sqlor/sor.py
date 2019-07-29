@@ -7,7 +7,7 @@ import json
 from appPublic.myImport import myImport
 from appPublic.dictObject import DictObject,dictObjectFactory
 from appPublic.unicoding import uDict
-from patterncoding.myTemplateEngine import MyTemplateEngine
+from appPublic.myTE import MyTemplateEngine
 
 
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
@@ -202,6 +202,7 @@ class SQLor(object):
 		await self.runVarSQL(cur,sql,value)
 		if callback is not None:
 			fields = [ i[0].lower() for i in cur.description ]
+			rec = None
 			if self.async_mode:
 				rec = await cur.fetchone()
 			else:
@@ -211,8 +212,7 @@ class SQLor(object):
 				dic = {}
 				for i in range(len(fields)):
 					dic.update({fields[i]:rec[i]})
-				#dic = uDict(dic,coding='utf8')
-				callback(dic,**kwargs)
+				callback(DictObject(**dic),**kwargs)
 				if self.async_mode:
 					rec = await cur.fetchone()
 				else:
@@ -346,7 +346,7 @@ class SQLor(object):
 	async def resultFields(self,desc,NS):
 		NS.update(rows=1,page=1)
 		r = await self.pagingdata(desc,NS)
-		ret = [ {'name':i[0],'type':i[1]} for i in self.cur.description ]
+		ret = [ DictObject(**{'name':i[0],'type':i[1]}) for i in self.cur.description ]
 		return ret
 		
 	async def runSQL(self,desc,NS,callback,**kw):
@@ -357,7 +357,7 @@ class SQLor(object):
 				self.ns[name] = []
 
 			def handler(self,rec):
-				obj = DictObject(rec)
+				obj = DictObject(**rec)
 				self.ns[self.name].append(obj)
 
 		cur = self.cursor()

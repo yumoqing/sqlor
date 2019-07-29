@@ -3,11 +3,13 @@ setup.py
 sqlor/__init__.py
 sqlor/aiomysqlor.py
 sqlor/aiopostgresqlor.py
+sqlor/crud.py
 sqlor/dbpools.py
 sqlor/ddl_template_mysql.py
 sqlor/ddl_template_oracle.py
 sqlor/ddl_template_postgresql.py
 sqlor/ddl_template_sqlserver.py
+sqlor/filter.py
 sqlor/mssqlor.py
 sqlor/mysqlor.py
 sqlor/oracleor.py

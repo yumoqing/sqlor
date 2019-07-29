@@ -4,6 +4,7 @@ from .filter import DBFilter
 from appPublic.objectAction import ObjectAction
 from appPublic.dictObject import DictObject
 from appPublic.timeUtils import  date2str,time2str,str2Date
+from appPublic.uniqueID import getID
 toStringFuncs={
 	'char':None,
 	'str':None,
@@ -21,17 +22,31 @@ fromStringFuncs={
 	'time':str2Date
 }
 
+class DatabaseNotfound(Exception):
+	def __init__(self,dbname):
+		Exception.__init__(self)
+		self.dbname = dbname
+
+	def __str__(self):
+		return f'{self.dbname} not found'
+
 class CRUD(object):
 	def __init__(self,dbname,tablename,rows=10):
 		self.pool = DBPools()
+		if dbname not in self.pool.databases.keys():
+			raise DatabaseNotfound(dbname)
 		self.dbname = dbname
 		self.tablename = tablename
 		self.rows = rows
+		self.primary_data = None
 		self.oa = ObjectAction()
 		
 	async def primaryKey(self):
-		data = await self.pool.getTablePrimaryKey(self.dbname,self.tablename)
-		return data
+		if self.primary_data is None:
+			self.primary_data = await self.pool.getTablePrimaryKey(self.dbname,
+							self.tablename)
+		
+		return self.primary_data
 	
 	async def forignKeys(self):
 		data = self.pool.getTableForignKeys(self.dbname,self.tablename)
@@ -78,7 +93,7 @@ class CRUD(object):
 		fs = [ self.defaultIOField(f) for f in fields ]
 		id = self.dbname+':'+ self.tablename
 		pk = await self.primaryKey()
-		idField = pk[0].field
+		idField = pk[0]['field_name']
 		data = {
 			"tmplname":"widget_js.tmpl",
 			"data":{
@@ -172,7 +187,7 @@ class CRUD(object):
 		data = {}
 		[ data.update({k.lower():v}) for k,v in rec.items() ]
 		@self.pool.runSQL
-		def addSQL(dbname,data):
+		async def addSQL(dbname,data,callback=None):
 			sqldesc={
 				"sql_string" : """
 				insert into %s (%s) values (%s)
@@ -180,72 +195,86 @@ class CRUD(object):
 			}
 			return sqldesc
 			
+		pk = await self.primaryKey()
+		k = pk[0]['field_name']
+		v = getID()
+		data[k] = v
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeAdd',data)
 		await addSQL(self.dbname,data)
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterAdd',data)
+		print('data=',data,'MMMMMMMMMMMMMM')
+		return {k:v}
 		return data
 	
 	async def defaultFilter(self,NS):
 		fields = await self.pool.getTableFields(self.dbname,self.tablename)
-		d = [ '%s = ${%s}$' % (f.name,f.name) for f in fields if f.name in NS.keys() ]
+		d = [ '%s = ${%s}$' % (f['name'],f['name']) for f in fields if f['name'] in NS.keys() ]
 		if len(d) == 0:
 			return ''
 		ret = ' and ' + ' and '.join(d)
 		return ret
 
-	def R(self,filters=None,NS={}):
+	async def R(self,filters=None,NS={}):
 		"""
 		retrieve data
 		"""
-		@self.pool.runSQLIterator
-		def retrieve(dbname,data):
+		@self.pool.runSQL
+		async def retrieve(dbname,data,callback=None):
 			fstr = ''
 			if filters is not None:
 				fstr = ' and '
 				dbf = DBFilter(filters)
 				fstr = fstr + dbf.genFilterString()
 			else:
-				fstr = self.defaultFilter(NS)
+				fstr = await self.defaultFilter(NS)
 			sqldesc = {
 				"sql_string":"""select * from %s where 1=1 %s""" % (self.tablename,fstr),
 			}
 			return sqldesc
 			
-		
-		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeRetieve',NS)
-		data = await retrieve(self.dbname,data,fstr)
-		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterRetieve',data)
-		return data
-		
-	async def RP(self,filters=None,NS={}):
-		@self.pool.runPaging
-		def pagingdata(dbname,data,filterString):
+		@self.pool.runSQLPaging
+		async def pagingdata(dbname,data,filters=None):
 			fstr = ""
 			if filters is not None:
 				fstr = ' and '
 				dbf = DBFilter(filters)
 				fstr = fstr + dbf.genFilterString()
 			else:
-				fstr = self.defaultFilter(NS)
+				fstr = await self.defaultFilter(NS)
 				
 			sqldesc = {
-				"sql_string":"""select * from %s where 1=1 %s""" % (self.tablename,filterString),
+				"sql_string":"""select * from %s where 1=1 %s""" % (self.tablename,fstr),
 				"default":{'rows':self.rows}
 			}
 			return sqldesc
-			
-		if not NS.get('sort',False):
-			fields = await self.pool.getTableFields(self.dbname,self.tablename)
-			NS['sort'] = fields[0]['name']
-		d = await pagingdata(self.dbname,NS)
-		return d
+		
+		p = await self.primaryKey()
+		if NS.get('__id') is not None:
+			NS[p[0]['field_name']] = NS['__id']
+			del NS['__id']
+			if NS.get('page'):
+				del NS['page']
 
+		if NS.get('page'):
+			if NS.get('sort',None) is None:
+				NS['sort'] = p[0]['field_name']
+
+		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeRetieve',NS)
+		if NS.get('page'):
+			data = await pagingdata(self.dbname,data)
+		else:
+			data = await retrieve(self.dbname,data)
+		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterRetieve',data)
+		return data
+		
 	async def U(self,data):
 		"""
 		update  data
 		"""
 		@self.pool.runSQL
-		def update(dbname,NS,condi,newData):
+		async def update(dbname,NS,callback=None):
+			condi = [ i['field_name'] for i in self.primary_data ]
+			newData = [ i for i in NS.keys() if i not in condi ]
 			c = [ '%s = ${%s}$' % (i,i) for i in condi ]
 			u = [ '%s = ${%s}$' % (i,i) for i in newData ]
 			cs = ' and '.join(c)
@@ -259,7 +288,7 @@ class CRUD(object):
 		pkfields = [k.field_name for k in pk ]
 		newData = [ k for k in data if k not in pkfields ]
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeUpdate',data)
-		await update(self.dbname,data,pkfields,newData)
+		await update(self.dbname,data)
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterUpdate',data)
 		return data
 	
@@ -268,16 +297,15 @@ class CRUD(object):
 		delete data
 		"""
 		@self.pool.runSQL
-		def delete(dbname,data,fields):
-			c = [ '%s = ${%s}$' % (i,i) for i in fields ]
+		def delete(dbname,data):
+			pnames = [ i['field_name'] for i in self.primary_data ]
+			c = [ '%s = ${%s}$' % (i,i) for i in pnames ]
 			cs = ' and '.join(c)
 			sqldesc = {
 				"sql_string":"delete from %s where %s" % (self.tablename,cs)
 			}
 			return sqldesc
 
-		pk = await self.primaryKey()
-		pkfields = [k.field_name for k in pk ]
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeDelete',data)
 		await delete(self.dbname,data,pkfields)
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterDelete',data)
