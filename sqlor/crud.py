@@ -197,8 +197,9 @@ class CRUD(object):
 			
 		pk = await self.primaryKey()
 		k = pk[0]['field_name']
-		v = getID()
-		data[k] = v
+		if not data.get(k):
+			v = getID()
+			data[k] = v
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeAdd',data)
 		await addSQL(self.dbname,data)
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterAdd',data)
