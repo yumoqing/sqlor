@@ -204,7 +204,7 @@ class CRUD(object):
 		await addSQL(self.dbname,data)
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterAdd',data)
 		print('data=',data,'MMMMMMMMMMMMMM')
-		return {k:v}
+		return {k:date[k]}
 		return data
 	
 	async def defaultFilter(self,NS):
