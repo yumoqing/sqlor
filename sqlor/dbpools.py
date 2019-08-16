@@ -9,6 +9,7 @@ from appPublic.Singleton import SingletonDecorator
 from appPublic.myjson import loadf
 from appPublic.jsonConfig import getConfig
 
+import threading
 from .sor import SQLor
 from .mssqlor	import MsSqlor
 from .oracleor import Oracleor
@@ -38,13 +39,13 @@ def sqlorFromFile(dbdef_file,coding='utf8'):
 	return sqlorFactory(dbdef)
 	
 class LifeConnect:
-	__conndict = {}
 	def __init__(self,connfunc,kw,use_max=1000,async_mode=False):
 		self.connfunc = connfunc
 		self.async_mode = async_mode
 		self.use_max = use_max
 		self.kw = kw
 		self.conn = None
+		self.used = False
 	
 	def print(self):
 		print(self.use_max)
@@ -56,25 +57,28 @@ class LifeConnect:
 		else:
 			self.conn = self.connfunc(**self.kw)
 		self.use_cnt = 0
-		self.__conndict[self.conn] = self
 
 	async def use(self):
 		if self.conn is None:
 			await self._mkconn()
-		conn = self.conn
-		if await self.testok():
-			return conn
-		del self.__conndict[conn]
-		await self._mkconn()
+		wait_time = 0.2
+		loop_cnt = 4
+		while loop_cnt > 0:
+			if await self.testok():
+				return self.conn
+			asyncio.sleep(wait_time)
+			wait_time = wait_time + 0.4
+			loop_cnt = loop_cnt - 1
+			await self.conn.close()
+			await self._mkconn()
+		raise Exception('database connect break')
 
-	@classmethod
 	async def free(self,conn):
-		lc = self.__conndict[conn]
-		lc.use_cnt = lc.use_cnt + 1
-		if lc.use_cnt >= lc.use_max:
-			await lc.conn.close()
-			await lc._mkcomm()
-		return lc
+		self.use_cnt = self.use_cnt + 1
+		return 
+		if self.use_cnt >= self.use_max:
+			await self.conn.close()
+			await self._mkcomm()
 
 	async def testok(self):
 		if self.async_mode:
@@ -104,10 +108,19 @@ class ConnectionPool(object):
 		self.maxconn = dbdesc.get('maxconn',5)
 		self.maxuse = dbdesc.get('maxuse',1000)
 		self._pool = asyncio.Queue(self.maxconn)
-		self.using = []
+		self.connectObject = {}
 		self.use_cnt = 0
 		self.max_use = 1000
+		self.lock = asyncio.Lock()
+		# self.lockstatus()
 	
+	def lockstatus(self):
+		self.loop.call_later(5,self.lockstatus)
+		print('--lock statu=',self.lock.locked(),
+				'--pool empty()=',self._pool.empty(),
+				'--full()=',self._pool.full()
+			)
+
 	async def _fillPool(self):
 		for i in range(self.maxconn):
 			lc = await self.connect()
@@ -127,13 +140,17 @@ class ConnectionPool(object):
 		
 	async def aquire(self):
 		lc = await self._pool.get()
-		self.using.append(lc)
 		conn = await lc.use()
+		with await self.lock:
+			self.connectObject[lc.conn] = lc
 		return conn
 
 	async def release(self,conn):
-		lc = await LifeConnect.free(conn)
-		self.using = [c for c in self.using if c != lc ]
+		lc = None
+		with await self.lock:
+			lc = self.connectObject.get(conn,None)
+			del self.connectObject[conn]
+		await lc.free(conn)
 		await self._pool.put(lc)
 	
 @SingletonDecorator
