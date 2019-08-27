@@ -259,12 +259,12 @@ class CRUD(object):
 			if NS.get('sort',None) is None:
 				NS['sort'] = p[0]['field_name']
 
-		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeRetieve',NS)
+		data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeRetrieve',NS)
 		if NS.get('page'):
 			data = await pagingdata(self.dbname,data)
 		else:
 			data = await retrieve(self.dbname,data)
-		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterRetieve',data)
+		data = self.oa.execute(self.dbname+'_'+self.tablename,'afterRetrieve',data)
 		return data
 		
 	async def U(self,data):
