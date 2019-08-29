@@ -213,11 +213,17 @@ class DBPools:
 			sor = await self.getSqlor(dbname)
 			try:
 				ret = await func(sor,dbname,*args,**kw)
-				await sor.conn.commit()
+				try:
+					await sor.conn.commit()
+				except:
+					pass
 				return ret
 			except Exception as e:
 				print('error',sor)
-				sor.conn.rollback()
+				try:
+					await sor.conn.rollback()
+				except:
+					pass
 				raise e
 			finally:
 				await self.freeSqlor(sor)
@@ -232,14 +238,20 @@ class DBPools:
 			try:
 				desc = await func(dbname,NS,callback=callback,**kw)
 				ret = await sor.runSQL(desc,NS,callback,**kw)
-				await sor.conn.commit()
+				try:
+					await sor.conn.commit()
+				except:
+					pass
 				if NS.get('dummy'):
 					return NS['dummy']
 				else:
 					return []
 			except Exception as e:
 				print('error:',e)
-				await sor.conn.rollback()
+				try:
+					await sor.conn.rollback()
+				except:
+					pass
 				raise e
 			finally:
 				await self.freeSqlor(sor)
