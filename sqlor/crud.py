@@ -56,15 +56,17 @@ class CRUD(object):
 		"""
 		fields information
 		"""
-		fields = await self.primaryKey()
-		pks = [ i.field_name for i in fields ]
+		pkdata = await self.primaryKey()
+		pks = [ i.field_name for i in pkdata ]
 		data = await self.pool.getTableFields(self.dbname,self.tablename)
-		[ d.update({'primarykey':True}) for d in data if d.name in pks ]
+		for d in data:
+			if d.name in pks:
+				d.update({'primarykey':True})
 		data = self.oa.execute(self.dbname+'_'+self.tablename,'tableInfo',data)
 		return data
 	
 	async def fromStr(self,data):
-		fields = await getTableFields(self.dbname,self.tablename)
+		fields = await self.pool.getTableFields(self.dbname,self.tablename)
 		ret = {}
 		for k in data:
 			v = None if data[k] == '' else data[k]
@@ -77,7 +79,7 @@ class CRUD(object):
 		return ret
 	
 	async def toStr(self,data):
-		fields = await getTableFields(self.dbname,self.tablename)
+		fields = await self.pool.getTableFields(self.dbname,self.tablename)
 		ret = {}
 		for k in data:
 			for f in fields:
