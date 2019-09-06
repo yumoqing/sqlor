@@ -69,7 +69,11 @@ class LifeConnect:
 			asyncio.sleep(wait_time)
 			wait_time = wait_time + 0.4
 			loop_cnt = loop_cnt - 1
-			await self.conn.close()
+			try:
+				await self.conn.close()
+			except:
+				pass
+			self.conn = None
 			await self._mkconn()
 		raise Exception('database connect break')
 
