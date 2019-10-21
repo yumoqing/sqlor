@@ -154,7 +154,6 @@ class ConnectionPool(object):
 		with await self.lock:
 			lc = self.connectObject.get(conn,None)
 			del self.connectObject[conn]
-		await lc.free(conn)
 		await self._pool.put(lc)
 	
 @SingletonDecorator
