@@ -1,0 +1,5 @@
+aiomysql
+mysql-connector
+asyncio
+jinja2
+git+https://github.com/yumoqing/appPublic
