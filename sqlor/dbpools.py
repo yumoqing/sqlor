@@ -66,7 +66,7 @@ class LifeConnect:
 		while loop_cnt > 0:
 			if await self.testok():
 				return self.conn
-			asyncio.sleep(wait_time)
+			await asyncio.sleep(wait_time)
 			wait_time = wait_time + 0.4
 			loop_cnt = loop_cnt - 1
 			try:
