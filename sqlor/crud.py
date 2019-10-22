@@ -259,7 +259,9 @@ class CRUD(object):
 		
 		@self.pool.inSqlor
 		async def main(dbname,NS,**kw):
+			print('here2')
 			p = await self.primaryKey(**kw)
+			print('here3')
 			if NS.get('__id') is not None:
 				NS[p[0]['field_name']] = NS['__id']
 				del NS['__id']
@@ -272,12 +274,16 @@ class CRUD(object):
 
 			data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeRetrieve',NS)
 			if NS.get('page'):
+				print('here4')
 				data = await pagingdata(self.dbname,data,**kw)
+				print('here5')
 			else:
 				data = await retrieve(self.dbname,data,**kw)
 			data = self.oa.execute(self.dbname+'_'+self.tablename,'afterRetrieve',data)
+			print('here6')
 			return data
 
+		print('here1')
 		return await main(self.dbname,NS,**kw)
 		
 	async def U(self,data, **kw):
