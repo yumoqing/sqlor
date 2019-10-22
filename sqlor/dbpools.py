@@ -115,10 +115,11 @@ class ConnectionPool(object):
 		self.connectObject = {}
 		self.use_cnt = 0
 		self.max_use = 1000
-		self.lock = asyncio.Lock()
+		# self.lock = asyncio.Lock()
 		# self.lockstatus()
 	
 	def lockstatus(self):
+		return
 		self.loop.call_later(5,self.lockstatus)
 		print('--lock statu=',self.lock.locked(),
 				'--pool empty()=',self._pool.empty(),
@@ -145,15 +146,22 @@ class ConnectionPool(object):
 	async def aquire(self):
 		lc = await self._pool.get()
 		conn = await lc.use()
+		"""
 		with await self.lock:
 			self.connectObject[lc.conn] = lc
+		"""
+		self.connectObject[lc.conn] = lc
 		return conn
 
 	async def release(self,conn):
 		lc = None
+		"""
 		with await self.lock:
 			lc = self.connectObject.get(conn,None)
 			del self.connectObject[conn]
+		"""
+		lc = self.connectObject.get(conn,None)
+		del self.connectObject[conn]
 		await self._pool.put(lc)
 	
 @SingletonDecorator
