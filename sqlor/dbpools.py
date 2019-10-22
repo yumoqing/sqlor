@@ -210,12 +210,24 @@ class DBPools:
 			raise Exception('database (%s) not connected'%dbname)
 		await p.release(conn)
 
+	async def useOrGetSor(self,dbname,**kw):
+			commit = False
+			if kw.get('sor'):
+				sor = kw['sor']
+			else:
+				sor = await self.getSqlor(dbname)
+				commit = True
+			return sor, commit
+		
 	def inSqlor(self,func):
 		@wraps(func)
-		async def wrap_func(sor,dbname,*args,**kw):
-			sor = await self.getSqlor(dbname)
+		async def wrap_func(dbname,NS,*args,**kw):
+			sor, commit = self.useOrGetSor(dbname, **kw)
+			kw['sor'] = sor
 			try:
-				ret = await func(sor,dbname,*args,**kw)
+				ret = await func(dbname,NS,*args,**kw)
+				if not commit:
+					return ret
 				try:
 					await sor.conn.commit()
 				except:
@@ -223,49 +235,61 @@ class DBPools:
 				return ret
 			except Exception as e:
 				print('error',sor)
+				if not commit:
+					raise e
 				try:
 					await sor.conn.rollback()
 				except:
 					pass
 				raise e
 			finally:
-				await self.freeSqlor(sor)
+				if commit:
+					await self.freeSqlor(sor)
 
 		return wrap_func
 				
 	def runSQL(self,func):
 		@wraps(func)
-		async def wrap_func(dbname,NS,*,callback=None,**kw):
-			sor = await self.getSqlor(dbname)
+		async def wrap_func(dbname,NS,*args,**kw):
+			sor, commit = self.useOrGetSor(dbname,**kw)
+			kw['sor'] = sor
 			ret = None
 			try:
-				desc = await func(dbname,NS,callback=callback,**kw)
-				ret = await sor.runSQL(desc,NS,callback,**kw)
-				try:
-					await sor.conn.commit()
-				except:
-					pass
+				desc = await func(dbname,NS,*args,**kw)
+				callback = kw.get('callback',None)
+				kw1 = {}
+				[  kw1.update({k:v}) for k,v in kw.items if k!='callback' ]
+				ret = await sor.runSQL(desc,NS,callback,**kw1)
+				if commit:
+					try:
+						await sor.conn.commit()
+					except:
+						pass
 				if NS.get('dummy'):
 					return NS['dummy']
 				else:
 					return []
 			except Exception as e:
 				print('error:',e)
+				if not commit:
+					raise e
 				try:
 					await sor.conn.rollback()
 				except:
 					pass
 				raise e
 			finally:
-				await self.freeSqlor(sor)
+				if commit:
+					await self.freeSqlor(sor)
 		return wrap_func
 
 	def runSQLPaging(self,func):
 		@wraps(func)
-		async def wrap_func(dbname,NS,**kw):
-			sor = await self.getSqlor(dbname)
+		async def wrap_func(dbname,NS,*args,**kw):
+			sor, commit = self.useOrGetSor(dbname,**kw)
+			kw['sor'] = sor
 			try:
-				desc = await func(dbname,NS,**kw)
+				desc = await func(dbname,NS,*args,**kw)
 				total = await sor.record_count(desc,NS)
 				recs = await sor.pagingdata(desc,NS)
 				data = {
@@ -277,56 +301,64 @@ class DBPools:
 				print('error',e)
 				raise e
 			finally:
-				await self.freeSqlor(sor)
+				if commit:
+					await self.freeSqlor(sor)
 		return wrap_func
 
-	def runSQLResultFields(self, func):
+	async def runSQLResultFields(self, func):
 		@wraps(func)
-		async def wrap_func(dbname,NS,**kw):
-			sor = await self.getSqlor(dbname)
+		async def wrap_func(dbname,NS,*args,**kw):
+			sor, commit = self.useOrGetSor(dbname,**kw)
+			kw['sor'] = sor
 			try:
-				desc = await func(dbname,NS,**kw)
+				desc = await func(dbname,NS,*args,**kw)
 				ret = await sor.resultFields(desc,NS)
 				return ret
 			except Exception as e:
 				print('error=',e)
 				raise e
 			finally:
-				await self.freeSqlor(sor)
+				if commit:
+					await self.freeSqlor(sor)
 		return wrap_func
 
-	async def getTables(self,dbname):
+	async def getTables(self,dbname,**kw):
 		@self.inSqlor
-		async def _getTables(sor,dbname):
+		async def _getTables(dbname,NS,**kw):
+			sor = kw['sor']
 			ret = await sor.tables()
 			return  ret
-		return await _getTables(None,dbname)
+		return await _getTables(dbname,{},**kw)
 
-	async def getTableFields(self,dbname,tblname):
+	async def getTableFields(self,dbname,tblname,**kw):
 		@self.inSqlor
-		async def _getTableFields(sor,dbname,tblname):
+		async def _getTableFields(dbname,NS,tblname,**kw):
+			sor = kw['sor']
 			ret = await sor.fields(tblname)
 			return ret
-		return await _getTableFields(None,dbname,tblname)
+		return await _getTableFields(dbname,{},tblname,**kw)
 
 	async def getTablePrimaryKey(self,dbname,tblname):
 		@self.inSqlor
-		async def _getTablePrimaryKey(sor,dbname,tblname):
+		async def _getTablePrimaryKey(dbname,NS,tblname,**kw):
+			sor = kw['sor']
 			ret = await sor.primary(tblname)
 			return  ret
-		return await _getTablePrimaryKey(None,dbname,tblname)
+		return await _getTablePrimaryKey(dbname,{},tblname,**kw)
 		
 	async def getTableIndexes(self,dbname,tblname):
 		@self.inSqlor
-		async def _getTablePrimaryKey(sor,dbname,tblname):
+		async def _getTablePrimaryKey(dbname,NS,tblname,**kw):
+			sor = kw['sor']
 			ret = await sor.indexes(tblname)
 			return  ret
-		return await _getTablePrimaryKey(None,dbname,tblname)
+		return await _getTablePrimaryKey(dbname,{},tblname,**kw)
 
 	async def getTableForignKeys(self,dbname,tblname):
 		@self.inSqlor
-		async def _getTableForignKeys(sor,dbname,tblname):
+		async def _getTableForignKeys(dbname,NS,tblname,**kw):
+			sor = kw['sor']
 			ret = await sor.fkeys(tblname)
 			return ret
-		return await _getTableForignKeys(None,dbname,tblname)
+		return await _getTableForignKeys(dbname,{},tblname,**kw)
 	
