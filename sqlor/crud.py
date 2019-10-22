@@ -278,9 +278,11 @@ class CRUD(object):
 				data = await pagingdata(self.dbname,data,**kw)
 				print('here5')
 			else:
+				print('here6')
 				data = await retrieve(self.dbname,data,**kw)
+				print('here7')
 			data = self.oa.execute(self.dbname+'_'+self.tablename,'afterRetrieve',data)
-			print('here6')
+			print('here8')
 			return data
 
 		print('here1')
