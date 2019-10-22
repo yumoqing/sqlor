@@ -258,7 +258,7 @@ class DBPools:
 				desc = await func(dbname,NS,*args,**kw)
 				callback = kw.get('callback',None)
 				kw1 = {}
-				[  kw1.update({k:v}) for k,v in kw.items if k!='callback' ]
+				[  kw1.update({k:v}) for k,v in kw.items() if k!='callback' ]
 				ret = await sor.runSQL(desc,NS,callback,**kw1)
 				if commit:
 					try:
