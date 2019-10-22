@@ -259,20 +259,29 @@ class DBPools:
 	def runSQL(self,func):
 		@wraps(func)
 		async def wrap_func(dbname,NS,*args,**kw):
+			print('runSQL:1')
 			sor, commit = await self.useOrGetSor(dbname,**kw)
+			print('runSQL:2')
 			kw['sor'] = sor
 			ret = None
 			try:
+				print('runSQL:3')
 				desc = await func(dbname,NS,*args,**kw)
+				print('runSQL:4')
 				callback = kw.get('callback',None)
 				kw1 = {}
 				[  kw1.update({k:v}) for k,v in kw.items() if k!='callback' ]
+				print('runSQL:5')
 				ret = await sor.runSQL(desc,NS,callback,**kw1)
+				print('runSQL:6')
 				if commit:
 					try:
+						print('runSQL:7')
 						await sor.conn.commit()
+						print('runSQL:8')
 					except:
 						pass
+				print('runSQL:9')
 				if NS.get('dummy'):
 					return NS['dummy']
 				else:
@@ -288,6 +297,7 @@ class DBPools:
 				raise e
 			finally:
 				if commit:
+					print('runSQL:10')
 					await self.freeSqlor(sor)
 		return wrap_func
 
