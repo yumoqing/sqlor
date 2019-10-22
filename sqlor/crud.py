@@ -56,7 +56,7 @@ class CRUD(object):
 		"""
 		fields information
 		"""
-		@self.pool.inSQLor
+		@self.pool.inSqlor
 		async def main(dbname,NS,**kw):
 			pkdata = await self.primaryKey(**kw)
 			pks = [ i.field_name for i in pkdata ]
@@ -195,7 +195,7 @@ class CRUD(object):
 			}
 			return sqldesc
 			
-		@self.pool.inSQLor
+		@self.pool.inSqlor
 		async def main(dbname,NS,**kw):
 			fields = await self.pool.getTableFields(self.dbname,self.tablename,**kw)
 			flist = [ f['name'] for f in fields ]
@@ -257,7 +257,7 @@ class CRUD(object):
 			}
 			return sqldesc
 		
-		@self.pool.inSQLor
+		@self.pool.inSqlor
 		async def main(dbname,NS,**kw):
 			p = await self.primaryKey(**kw)
 			if NS.get('__id') is not None:
@@ -297,7 +297,7 @@ class CRUD(object):
 			}
 			return sqldesc
 		
-		@self.pool.inSQLor
+		@self.pool.inSqlor
 		async def main(dbname,NS,**kw):
 			pk = await self.primaryKey(**kw)
 			pkfields = [k.field_name for k in pk ]
@@ -322,7 +322,7 @@ class CRUD(object):
 			}
 			return sqldesc
 
-		@self.pool.inSQLor
+		@self.pool.inSqlor
 		async def main(dbname,NS,**kw):
 			data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeDelete',data)
 			await delete(self.dbname,data,pkfields,**kw)
