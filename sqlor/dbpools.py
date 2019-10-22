@@ -222,7 +222,7 @@ class DBPools:
 	def inSqlor(self,func):
 		@wraps(func)
 		async def wrap_func(dbname,NS,*args,**kw):
-			sor, commit = self.useOrGetSor(dbname, **kw)
+			sor, commit = await self.useOrGetSor(dbname, **kw)
 			kw['sor'] = sor
 			try:
 				ret = await func(dbname,NS,*args,**kw)
@@ -251,7 +251,7 @@ class DBPools:
 	def runSQL(self,func):
 		@wraps(func)
 		async def wrap_func(dbname,NS,*args,**kw):
-			sor, commit = self.useOrGetSor(dbname,**kw)
+			sor, commit = await self.useOrGetSor(dbname,**kw)
 			kw['sor'] = sor
 			ret = None
 			try:
@@ -286,7 +286,7 @@ class DBPools:
 	def runSQLPaging(self,func):
 		@wraps(func)
 		async def wrap_func(dbname,NS,*args,**kw):
-			sor, commit = self.useOrGetSor(dbname,**kw)
+			sor, commit = await self.useOrGetSor(dbname,**kw)
 			kw['sor'] = sor
 			try:
 				desc = await func(dbname,NS,*args,**kw)
@@ -308,7 +308,7 @@ class DBPools:
 	async def runSQLResultFields(self, func):
 		@wraps(func)
 		async def wrap_func(dbname,NS,*args,**kw):
-			sor, commit = self.useOrGetSor(dbname,**kw)
+			sor, commit = await self.useOrGetSor(dbname,**kw)
 			kw['sor'] = sor
 			try:
 				desc = await func(dbname,NS,*args,**kw)
