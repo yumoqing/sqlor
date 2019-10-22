@@ -338,7 +338,7 @@ class DBPools:
 			return ret
 		return await _getTableFields(dbname,{},tblname,**kw)
 
-	async def getTablePrimaryKey(self,dbname,tblname):
+	async def getTablePrimaryKey(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTablePrimaryKey(dbname,NS,tblname,**kw):
 			sor = kw['sor']
@@ -346,7 +346,7 @@ class DBPools:
 			return  ret
 		return await _getTablePrimaryKey(dbname,{},tblname,**kw)
 		
-	async def getTableIndexes(self,dbname,tblname):
+	async def getTableIndexes(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTablePrimaryKey(dbname,NS,tblname,**kw):
 			sor = kw['sor']
@@ -354,7 +354,7 @@ class DBPools:
 			return  ret
 		return await _getTablePrimaryKey(dbname,{},tblname,**kw)
 
-	async def getTableForignKeys(self,dbname,tblname):
+	async def getTableForignKeys(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTableForignKeys(dbname,NS,tblname,**kw):
 			sor = kw['sor']
