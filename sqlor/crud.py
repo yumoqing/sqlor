@@ -235,7 +235,7 @@ class CRUD(object):
 				dbf = DBFilter(filters)
 				fstr = fstr + dbf.genFilterString()
 			else:
-				fstr = await self.defaultFilter(NS)
+				fstr = await self.defaultFilter(NS,**kw)
 			sqldesc = {
 				"sql_string":"""select * from %s where 1=1 %s""" % (self.tablename,fstr),
 			}
@@ -249,7 +249,7 @@ class CRUD(object):
 				dbf = DBFilter(filters)
 				fstr = fstr + dbf.genFilterString()
 			else:
-				fstr = await self.defaultFilter(NS)
+				fstr = await self.defaultFilter(NS,**kw)
 				
 			sqldesc = {
 				"sql_string":"""select * from %s where 1=1 %s""" % (self.tablename,fstr),
