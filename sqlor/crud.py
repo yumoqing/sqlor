@@ -188,6 +188,8 @@ class CRUD(object):
 		"""
 		@self.pool.runSQL
 		async def addSQL(dbname,data,**kw):
+			fns = kw['fns']
+			vfs = kw['vfs']
 			sqldesc={
 				"sql_string" : """
 				insert into %s (%s) values (%s)
@@ -209,7 +211,10 @@ class CRUD(object):
 				v = getID()
 				data[k] = v
 			data = self.oa.execute(self.dbname+'_'+self.tablename,'beforeAdd',data)
-			await addSQL(self.dbname,data,**kw)
+			kwargs = kw.copy()
+			kwargs['fns'] = fns
+			kwargs['vfs'] = vfs
+			await addSQL(self.dbname,data,**kwargs)
 			data = self.oa.execute(self.dbname+'_'+self.tablename,'afterAdd',data)
 			return {k:data[k]}
 
