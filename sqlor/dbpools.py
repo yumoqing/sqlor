@@ -18,7 +18,6 @@ from .mysqlor import MySqlor
 from .aiomysqlor import AioMysqlor
 from .aiopostgresqlor import AioPostgresqlor
 
-
 def sqlorFactory(dbdesc):
 	driver = dbdesc.get('driver',dbdesc)
 	def findSubclass(name,klass):
@@ -370,3 +369,29 @@ class DBPools:
 			return ret
 		return await _getTableForignKeys(dbname,{},tblname,**kw)
 	
+async def runSQL(dbname,sql,ns={},sor=None):
+	pool = DBPools()
+	@pool.runSQL
+	async def desc(dbname,ns,*args,**kw):
+		return {
+			"sql_string":sql
+		}
+	kw = {
+		'sor':sor
+	}
+	x = await desc(dbname,ns,**kw)
+	return x
+
+async def runSQLPaging(dbname,sql,ns={},sor=None):
+	pool = DBPools()
+	@pool.runSQLPaging
+	async def desc(dbname,ns,*args,**kw):
+		return {
+			"sql_string":sql
+		}
+	kw = {
+		"sor":sor
+	}
+	x = await desc(dbname, ns, **kw)
+	return x
+
