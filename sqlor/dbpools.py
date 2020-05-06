@@ -192,7 +192,12 @@ class DBPools:
 		sqlor = await self.getSqlor(name)
 		try:
 			yield sqlor
+		except:
+			if sqlor.dataChanged:
+				sqlor.rollback()
 		finally:
+			if sqlor.dataChanged:
+				sqlor.commit()
 			await self.freeSqlor(sqlor)
 	
 	async def _aquireConn(self,dbname):
