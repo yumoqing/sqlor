@@ -2,6 +2,7 @@
 import asyncio
 from functools import wraps 
 import codecs
+
 from contextlib import asynccontextmanager
 
 from appPublic.myImport import myImport
@@ -166,17 +167,21 @@ class ConnectionPool(object):
 	
 @SingletonDecorator
 class DBPools:
-	def __init__(self,databases={},max_connect=10,loop=None):
+	def __init__(self,databases={},max_connect=100,loop=None):
 		if loop is None:
 			loop = asyncio.get_event_loop()
 		self.loop = loop
+		self.max_connect = max_connect
+		self.sema = asyncio.Semaphore(max_connect)
 		self._cpools = {}
 		self.databases = databases
+		self.meta = {}
 	
 	def addDatabase(self,name,desc):
 		self.databases[name] = desc
 
 	async def getSqlor(self,name):
+		await self.sema.acquire()
 		desc = self.databases.get(name)
 		sor = sqlorFactory(desc)
 		sor.name = name
@@ -186,6 +191,7 @@ class DBPools:
 
 	async def freeSqlor(self,sor):
 		await self._releaseConn(sor.name,sor.conn,sor.cur)
+		self.sema.release()
 
 	@asynccontextmanager
 	async def sqlorContext(self,name):
@@ -193,14 +199,15 @@ class DBPools:
 		try:
 			yield sqlor
 		except:
-			if sqlor.dataChanged:
+			if if sqlor and sqlor.dataChanged:
 				sqlor.rollback()
 		finally:
-			if sqlor.dataChanged:
+			if sif sqlor and qlor.dataChanged:
 				sqlor.commit()
 			await self.freeSqlor(sqlor)
 	
 	async def _aquireConn(self,dbname):
+		"""
 		p = self._cpools.get(dbname)
 		if p == None:
 			p = ConnectionPool(self.databases.get(dbname),self.loop)
@@ -212,12 +219,26 @@ class DBPools:
 		else:
 			cur = conn.cursor()
 		return self.isAsyncDriver(dbname),conn,cur
-	
+		"""
+		dbdesc = self.databases.get(dbname)
+		driver = myImport(dbdesc['driver'])
+		conn = None
+		cur = None
+		if self.isAsyncDriver(dbname):
+			conn = await driver.connect(**dbdesc['kwargs'])
+			cur = await conn.cursor()
+			return True,conn,cur
+		else:
+			conn = driver.connect(**dbdesc.kwargs)
+			cur = conn.cursor()
+			return False,conn,cur
+
 	def isAsyncDriver(self,dbname):
 		ret = self.databases[dbname].get('async_mode',False)
 		return ret
 
 	async def _releaseConn(self,dbname,conn,cur):
+		"""
 		if self.isAsyncDriver(dbname):
 			await cur.close()
 		else:
@@ -230,6 +251,16 @@ class DBPools:
 		if p == None:
 			raise Exception('database (%s) not connected'%dbname)
 		await p.release(conn)
+		"""
+		if self.isAsyncDriver(dbname):
+			await cur.close()
+		else:
+			try:
+				cur.fetchall()
+			except:
+				pass
+			cur.close()
+		conn.close()
 
 	async def useOrGetSor(self,dbname,**kw):
 			commit = False
@@ -343,6 +374,19 @@ class DBPools:
 					await self.freeSqlor(sor)
 		return wrap_func
 
+	def setMeta(self,key,n,v):
+		if not self.meta.get(key):
+			self.meta[key] = {}
+		self.meta[key][n] = v
+
+	def getMeta(self,key,n=None):
+		if not self.meta.get(key):
+			self.meta[key] = {}
+
+		if n is None:
+			return self.meta[key]
+		return self.meta[key].get(n,None)
+
 	async def getTables(self,dbname,**kw):
 		@self.inSqlor
 		async def _getTables(dbname,NS,**kw):
@@ -354,32 +398,52 @@ class DBPools:
 	async def getTableFields(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTableFields(dbname,NS,tblname,**kw):
+			key = '%s:%s' % (dbname,tblname)
+			fields = self.getMeta(key, 'fields')
+			if fields:
+				return fields
 			sor = kw['sor']
 			ret = await sor.fields(tblname)
+			self.setMeta(key,'fields',ret)
 			return ret
 		return await _getTableFields(dbname,{},tblname,**kw)
 
 	async def getTablePrimaryKey(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTablePrimaryKey(dbname,NS,tblname,**kw):
+			key = '%s:%s' % (dbname,tblname)
+			pri = self.getMeta(key,'primarykey')
+			if pri:
+				return pri
 			sor = kw['sor']
 			ret = await sor.primary(tblname)
+			self.setMeta(key,'primarykey',ret)
 			return  ret
 		return await _getTablePrimaryKey(dbname,{},tblname,**kw)
 		
 	async def getTableIndexes(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTablePrimaryKey(dbname,NS,tblname,**kw):
+			key = '%s:%s' % (dbname,tblname)
+			idxes = self.getMeta(key,'indexes')
+			if idxes:
+				return idxes
 			sor = kw['sor']
 			ret = await sor.indexes(tblname)
+			self.setMeta(key,'indexes',ret)
 			return  ret
 		return await _getTablePrimaryKey(dbname,{},tblname,**kw)
 
 	async def getTableForignKeys(self,dbname,tblname,**kw):
 		@self.inSqlor
 		async def _getTableForignKeys(dbname,NS,tblname,**kw):
+			key = '%s:%s' % (dbname,tblname)
+			forignkeys = self.getMeta(key,'forignkeys')
+			if forignkeys:
+				return forignkeys
 			sor = kw['sor']
 			ret = await sor.fkeys(tblname)
+			self.setMeta(key,'forignkeys',forignkeys)
 			return ret
 		return await _getTableForignKeys(dbname,{},tblname,**kw)
 	
