@@ -2,6 +2,7 @@
 import asyncio
 from functools import wraps 
 import codecs
+from contextlib import asynccontextmanager
 
 from appPublic.myImport import myImport
 from appPublic.dictObject import DictObject
@@ -186,6 +187,14 @@ class DBPools:
 	async def freeSqlor(self,sor):
 		await self._releaseConn(sor.name,sor.conn,sor.cur)
 
+	@asynccontextmanager
+	async def sqlorContext(self,name):
+		sqlor = await self.getSqlor(name)
+		try:
+			yield sqlor
+		finally:
+			await self.freeSqlor(sqlor)
+	
 	async def _aquireConn(self,dbname):
 		p = self._cpools.get(dbname)
 		if p == None:

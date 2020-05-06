@@ -455,5 +455,4 @@ class SQLor(object):
 			desc['validation'].append(idx)		
 		return desc
 	
-		
 				
