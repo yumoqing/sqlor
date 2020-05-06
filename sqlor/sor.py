@@ -198,7 +198,7 @@ class SQLor(object):
 		
 		return (m_sql,newdata)
 		
-	def getSQLType(self,sql):
+	def getSqlType(self,sql):
 		"""
 		return one of "qry", "dml" and "ddl"
 		ddl change the database schema

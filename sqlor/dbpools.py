@@ -199,10 +199,10 @@ class DBPools:
 		try:
 			yield sqlor
 		except:
-			if if sqlor and sqlor.dataChanged:
+			if sqlor and sqlor.dataChanged:
 				sqlor.rollback()
 		finally:
-			if sif sqlor and qlor.dataChanged:
+			if sqlor and qlor.dataChanged:
 				sqlor.commit()
 			await self.freeSqlor(sqlor)
 	
