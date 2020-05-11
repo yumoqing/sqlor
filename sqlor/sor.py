@@ -390,8 +390,17 @@ class SQLor(object):
 		await self.execute(sql,NS,callback)
 	
 	async def sqlExecute(self,desc,NS):
-		await self.execute(sql,NS,None)
+		await self.execute(desc,NS,None)
 	
+	async def sqlExe(self,sql,ns):
+		desc = {
+			"sql_string":sql
+		}
+		ret = []
+		await self.execute(desc,ns,
+			callback=lambda(x):ret.append(DictObject(**x)))
+		return ret
+
 	async def tables(self):
 		sqlstring = self.tablesSQL()
 		ret = []
