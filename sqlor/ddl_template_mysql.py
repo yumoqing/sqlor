@@ -31,11 +31,9 @@ NOT NULL
 {%- endif -%}
 {% endmacro %}
 {% macro primary() %}
-{% if len(','.join(summary[0].primary))>0 %}
-,primary key({{','.join(summary[0].primary)}})
-{% endif %}
+,primary key({{summary[0].primary}})
 {% endmacro %}
-drop table {{summary[0].name}};
+drop table if exists {{summary[0].name}};
 CREATE TABLE {{summary[0].name}}
 (
 {% for field in fields %}

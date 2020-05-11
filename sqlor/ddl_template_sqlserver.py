@@ -26,9 +26,7 @@ NOT NULL
 {% endmacro %}
 
 {% macro primary() %}
-{% if len(','.join(summary[0].primary))>0 %}
-,primary key({{','.join(summary[0].primary)}})
-{% endif %}
+,primary key({{summary[0].primary}})
 {% endmacro %}
 
 drop table dbo.{{summary[0].name}};
