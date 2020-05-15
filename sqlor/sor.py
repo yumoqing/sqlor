@@ -1,4 +1,5 @@
 import os  
+from asyncio import coroutine
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 import sys
 import codecs
@@ -393,12 +394,9 @@ class SQLor(object):
 		await self.execute(desc,NS,None)
 	
 	async def sqlExe(self,sql,ns):
-		desc = {
-			"sql_string":sql
-		}
 		ret = []
-		await self.execute(desc,ns,
-			callback=lambda(x):ret.append(DictObject(**x)))
+		await self.execute(sql,ns,
+			callback=lambda x:ret.append(DictObject(**x)))
 		return ret
 
 	async def tables(self):
@@ -481,10 +479,16 @@ class SQLor(object):
 			desc['validation'].append(idx)		
 		return desc
 	
-	def rollback(self):
-		self.conn.rollback()
+	async def rollback(self):
+		if self.async_mode:
+			await self.conn.rollback()
+		else:
+			self.conn.rollback()
 		self.dataChanged = False
 
-	def commit(self):
-		self.conn.commit()
+	async def commit(self):
+		if self.async_mode:
+			await self.conn.commit()
+		else:
+			self.conn.commit()
 		self.datachanged = False

@@ -1,5 +1,6 @@
 
 import asyncio
+from traceback import print_exc
 from functools import wraps 
 import codecs
 
@@ -198,12 +199,14 @@ class DBPools:
 		sqlor = await self.getSqlor(name)
 		try:
 			yield sqlor
-		except:
+		except Exception as e:
+			print_exc()
+			print('Exeception=',e)
 			if sqlor and sqlor.dataChanged:
-				sqlor.rollback()
+				await sqlor.rollback()
 		finally:
 			if sqlor and sqlor.dataChanged:
-				sqlor.commit()
+				await sqlor.commit()
 			await self.freeSqlor(sqlor)
 	
 	async def _aquireConn(self,dbname):
