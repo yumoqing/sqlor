@@ -202,7 +202,7 @@ class DBPools:
 			if sqlor and sqlor.dataChanged:
 				sqlor.rollback()
 		finally:
-			if sqlor and qlor.dataChanged:
+			if sqlor and sqlor.dataChanged:
 				sqlor.commit()
 			await self.freeSqlor(sqlor)
 	
