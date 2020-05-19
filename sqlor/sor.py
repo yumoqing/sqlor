@@ -244,7 +244,7 @@ class SQLor(object):
 		cur = self.cursor()
 		markedSQL,datas = self.maskingSQL(sql,{})
 		datas = [ self.dataConvert(d) for d in values ]
-		if async_mode:
+		if self.async_mode:
 			await cur.executemany(markedSQL,datas)
 		else:
 			cur.executemany(markedSQL,datas)
