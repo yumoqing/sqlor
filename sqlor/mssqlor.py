@@ -153,8 +153,7 @@ from
 	def indexesSQL(self,tablename=None):
 		sqlcmd = """SELECT
 index_name=lower(IDX.Name),
-index_type=case when KC.type_desc is null then 'primary' WHEN IDX.is_unique=1 THEN 'unique' ELSE 'ununique' END,
-table_name=lower(O.Name),
+index_type=IDX.is_unique,
 column_name=lower(C.Name)
 FROM sys.indexes IDX 
 INNER JOIN sys.index_columns IDXC

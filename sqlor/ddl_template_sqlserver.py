@@ -26,7 +26,7 @@ NOT NULL
 {% endmacro %}
 
 {% macro primary() %}
-,primary key({{summary[0].primary}})
+,primary key({{','.join(summary[0].primary)}})
 {% endmacro %}
 
 drop table dbo.{{summary[0].name}};
@@ -37,10 +37,8 @@ CREATE TABLE dbo.{{summary[0].name}}
 {% endfor %}
 {{primary()}}
 )
-{% for v in validation %}
-{% if v.oper=='idx' %}
-CREATE {% if v.value.idxtype=='unique' %}UNIQUE{% endif %} INDEX {{summary[0].name}}_{{v.name}} ON {{summary[0].name}}({{",".join(v.value.fields)}});
-{% endif %}
+{% for v in indexes %}
+CREATE {% if v.idxtype=='unique' %}UNIQUE{% endif %} INDEX {{summary[0].name}}_{{v.name}} ON {{summary[0].name}}({{",".join(v.idxfields)}});
 {%- endfor -%}
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'{{summary[0].title}}' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'{{summary[0].name}}'
 {% for field in fields %}

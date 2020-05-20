@@ -50,7 +50,12 @@ class MySqlor(SQLor):
 	}
 	@classmethod
 	def isMe(self,name):
-		return name=='mysql.connector'
+		print('*********name=',name,'*************')
+		if  name=='mysql.connector':
+			return True
+		if name=='aiomysql':
+			return True
+		return False
 	
 	def grammar(self):
 		return {
@@ -149,26 +154,14 @@ limit $[from_line]$,$[rows]$"""
 		return sqlcmd
 
 	def pkSQL(self,tablename=None):
-		sqlcmd = """SELECT
-	lower(c.table_name) as table_name,
-  lower(c.COLUMN_NAME) as field_name
-FROM
-  INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS t,
-  INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS c
-WHERE
-  t.CONSTRAINT_TYPE = 'PRIMARY KEY'
-  AND t.TABLE_SCHEMA = '%s'
-  AND t.TABLE_NAME = c.TABLE_NAME
-""" % self.dbdesc.get('dbname','unknown').lower()
-		if tablename is not None:
-			sqlcmd = sqlcmd + " AND c.TABLE_NAME = '%s'" % tablename.lower()
+		sqlcmd = """SELECT column_name as name FROM INFORMATION_SCHEMA.`KEY_COLUMN_USAGE` WHERE table_name='%s' AND constraint_name='PRIMARY'
+""" % tablename.lower()
 		return sqlcmd
 
 	def indexesSQL(self,tablename=None):
 		sqlcmd = """SELECT DISTINCT
     lower(index_name) as index_name,
-    lower(index_type) as index_type,
-	lower(table_name) as table_name,
+	NON_UNIQUE as is_unique,
 	lower(column_name) as column_name
 FROM
     information_schema.statistics

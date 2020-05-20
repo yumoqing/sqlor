@@ -139,57 +139,9 @@ where
 		return sqlcmd
 		
 	def indexesSQL(self,tablename=None):
-		"""
-SELECT
-
-A.SCHEMANAME,
-
-A.TABLENAME,
-
-A.INDEXNAME,
-
-A.TABLESPACE,
-
-A.INDEXDEF,
-
-B.AMNAME,
-
-C.INDEXRELID,
-
-C.INDNATTS,
-
-C.INDISUNIQUE,
-
-C.INDISPRIMARY,
-
-C.INDISCLUSTERED,
-
-D.DESCRIPTION
-
-FROM
-
-PG_AM B
-
-LEFT JOIN PG_CLASS F ON B.OID = F.RELAM
-
-LEFT JOIN PG_STAT_ALL_INDEXES E ON F.OID = E.INDEXRELID
-
-LEFT JOIN PG_INDEX C ON E.INDEXRELID = C.INDEXRELID
-
-LEFT OUTER JOIN PG_DESCRIPTION D ON C.INDEXRELID = D.OBJOID,
-
-PG_INDEXES A
-
-WHERE
-
-A.SCHEMANAME = E.SCHEMANAME AND A.TABLENAME = E.RELNAME AND A.INDEXNAME = E.INDEXRELNAME
-
-AND E.SCHEMANAME = 'public' AND E.RELNAME = 'table_name'
-"""
 		sqlcmd = """select 
   lower(a.index_name) index_name,
-  lower(a.UNIQUENESS) index_type,
-  lower(a.table_name) table_name,
+  lower(a.UNIQUENESS) is_unique,
   lower(b.column_name) column_name 
 from user_indexes a, user_ind_columns b
 where a.index_name = b.index_name"""

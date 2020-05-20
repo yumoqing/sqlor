@@ -25,7 +25,7 @@ NOT NULL
 {%- endif -%}
 {% endmacro %}
 {% macro primary() %}
-,primary key({{summary[0].primary}})
+,primary key({{','.join(summary[0].primary)}})
 {% endmacro %}
 drop table {{summary[0].name}};
 CREATE TABLE {{summary[0].name}}
@@ -35,10 +35,8 @@ CREATE TABLE {{summary[0].name}}
 {% endfor %}
 {{primary()}}
 );
-{% for v in validation %}
-{% if v.oper=='idx' %}
-CREATE {% if v.value.idxtype=='unique' %}UNIQUE{% endif %} INDEX {{summary[0].name}}_{{v.name}} ON {{summary[0].name}}({{",".join(v.value.fields)}});
-{% endif %}
+{% for v in indexes %}
+CREATE {% if v.idxtype=='unique' %}UNIQUE{% endif %} INDEX {{summary[0].name}}_{{v.name}} ON {{summary[0].name}}({{",".join(v.idxfields)}});
 {%- endfor -%}
 COMMENT ON TABLE {{summary[0].name}} IS '{{summary[0].title}}';
 {% for field in fields %}

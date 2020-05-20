@@ -120,8 +120,7 @@ where
 	def indexesSQL(self,tablename=None):
 		sqlcmd = """select 
   lower(a.index_name) index_name,
-  lower(a.UNIQUENESS) index_type,
-  lower(a.table_name) table_name,
+  lower(a.UNIQUENESS) is_unique,
   lower(b.column_name) column_name 
 from user_indexes a, user_ind_columns b
 where a.index_name = b.index_name"""

@@ -9,9 +9,9 @@ from appPublic.myImport import myImport
 from appPublic.dictObject import DictObject,dictObjectFactory
 from appPublic.unicoding import uDict
 from appPublic.myTE import MyTemplateEngine
-
-
+from appPublic.objectAction import ObjectAction
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
+from .filter import DBFilter
 
 class SQLorException(Exception,object):
 	def __int__(self,**kvs):
@@ -65,7 +65,18 @@ class SQLor(object):
 		self.convfuncs = {}
 		self.cc = ConditionConvert()
 		self.dataChanged = False
-	
+		self.metadatas={}
+
+	def setMeta(self,tablename,meta):
+		self.metadatas[tablename.lower()] = meta
+
+	def getMeta(self,tablename):
+		return self.metadatas.get(tablename.lower(),None)
+
+	def removeMeta(self,tablename):
+		if getMeta(self.tablename):
+			del self.metadatas[tablename.lower()]
+
 	def setCursor(self,async_mode,conn,cur):
 		self.async_mode = async_mode
 		self.conn = conn
@@ -455,28 +466,36 @@ class SQLor(object):
 		return await self.sqlExecute(desc,{})
 		
 	async def getTableDesc(self,tablename):
+		desc = self.getMeta(tablename)
+		if desc:
+			return desc
 		desc = {}
 		summary = [ i for i in await self.tables() if tablename.lower() == i.name ]
-		primary = [i.field_name for i in await self.primary(tablename) ]
-		summary['primary'] = primary
+		print('summary=',summary)
+		pris = await self.primary(tablename)
+		print('primary key=',pris)
+		primary = [i.name for i in pris ]
+		summary[0]['primary'] = primary
 		desc['summary'] = summary
 		desc['fields'] = await self.fields(tablename=tablename)
-		desc['validation'] = []
+		desc['indexes'] = []
 		idx = {}
-		async for idxrec in self.indexes(tablename=tablename):
+		idxrecs = await self.indexes(tablename)
+		for idxrec in idxrecs:
+			if idxrec.index_name == 'primary':
+				continue
 			if idxrec.index_name != idx.get('name',None):
 				if idx != {}:
-					desc['validation'].append(idx)
+					desc['indexes'].append(idx)
 					idx = {
-						'fields':[]
 					}
-				else:
-					idx['fields'] = []
 				idx['name'] = idxrec.index_name
-				idx['oper'] = 'idx'
-			idx['fields'].append(idxrec.field_name)
+				idx['idxtype'] = 'unique' if idxrec.is_unique else 'index'
+				idx['idxfields'] = []
+			idx['idxfields'].append(idxrec.column_name)
 		if idx != {}:
-			desc['validation'].append(idx)		
+			desc['indexes'].append(idx)		
+		self.setMeta(tablename,desc)
 		return desc
 	
 	async def rollback(self):
@@ -492,3 +511,57 @@ class SQLor(object):
 		else:
 			self.conn.commit()
 		self.datachanged = False
+
+	async def I(self,tablename):
+		return await self.getTableDesc(tablename)
+
+	async def C(self,tablename,ns):
+		desc = await self.I(tablename)
+		fields = [ i['name'] for i in desc['fields']]
+		fns = ','.join(fields)
+		vfns = ','.join(['${%s}$' % n for n in fields ])
+		sql = 'insert into %s (%s) values (%s)' % (tablename,fns,vfns)
+		await self.runSQL({'sql_string':sql},ns,None)
+
+	async def R(self,tablename,ns,filters=None):
+		desc = await self.I(tablename)
+		sql = 'select * from  %s where 1=1' % tablename.lower()
+		if filters:
+			dbf = DBFilter(filters)
+			sql = '%s and %s' % (sql, dbf.genFilterString())
+		else:
+			fields = [ i['name'] for i in desc['fields'] ]
+			c = [ '%s=${%s}$' % (k,k) for k in ns.keys() if k in fields ]
+			if len(c) > 0:
+				sql = '%s and %s' % (sql,' and '.join(c))
+		if 'page' in ns.keys():
+			if not 'sort' in ns.keys():
+				ns['sort'] = desc['summary'][0]['primary'][0]
+			return await self.pagingdata({'sql_string':sql},ns)
+		else:
+			return await self.sqlExe(sql,ns)
+
+	async def U(self,tablename,ns):
+		desc = await self.I(tablename)
+		fields = [ i['name'] for i in desc['fields']]
+		condi = [ i for i in desc['summary'][0]['primary']]
+		newData = [ i for i in ns.keys() if i not in condi and i in fields]
+		c = [ '%s = ${%s}$' % (i,i) for i in condi ]
+		u = [ '%s = ${%s}$' % (i,i) for i in newData ]
+		c_str = ','.join(c)
+		u_str = ','.join(u)
+		sql = 'update %s set %s where %s' % (tablename,
+					u_str,c_str)
+		await self.runSQL({'sql_string':sql},ns,None)
+		pass
+
+	async def D(self,tablename,ns):
+		desc = await self.I(tablename)
+		fields = [ i['name'] for i in desc['fields']]
+		condi = [ i for i in desc['summary'][0]['primary']]
+		c = [ '%s = ${%s}$' % (i,i) for i in condi ]
+		c_str = ','.join(c)
+		sql = 'delete from %s where %s' % (tablename,c_str)
+		await self.runSQL({'sql_string':sql},ns,None)
+
+
