@@ -1,0 +1,12 @@
+{
+	"driver":"motor",
+	"async_mode":true,
+	"dbname":"test",
+	"kwargs":{
+		"host":"localhost",
+		"port":20017,
+		"user":"test",
+		"password":"test123",
+		"dbname":"test"
+	}
+}
