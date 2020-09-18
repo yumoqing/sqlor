@@ -38,7 +38,7 @@ class PostgreSQLor(SQLor):
 	}
 	@classmethod
 	def isMe(self,name):
-		return name=='psycopg2'
+		return name=='psycopg2' or name=='aiopg'
 
 	def grammar(self):
 		return {
