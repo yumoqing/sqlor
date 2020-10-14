@@ -67,34 +67,46 @@ from (
 where row_id >=$[from_line]$ and row_id < $[end_line]$"""
 
 	def tablesSQL(self):
-		"""
-			列出表名
-			SELECT   tablename   FROM   pg_tables;
-			WHERE   tablename   NOT   LIKE   'pg%'
-			AND tablename NOT LIKE 'sql_%' 
-			ORDER   BY   tablename;
-		"""
-		sqlcmd = """select 
-lower(table_name) as name,
-lower(decode(comments,null,table_name,comments)) as title
-from USER_TAB_COMMENTS where table_type = 'TABLE'"""
+		sqlcmd = """select x.name, y.description as title
+from 
+(select a.name,c.oid
+	from
+	(select lower(tablename) as name from tables where schemaname='public') a
+	pg_class c
+where a.name = c.relname) x
+left join pg_description y
+on x.oid=y.objoid
+	and y.objsubid='0'"""
 		return sqlcmd
 	
 	def fieldsSQL(self,tablename=None):
-		"""SELECT col_description(a.attrelid,a.attnum) as comment,pg_type.typname as typename,a.attname as name, a.attnotnull as notnull
-FROM pg_class as c,pg_attribute as a inner join pg_type on pg_type.oid = a.atttypid
-where c.relname = 'tablename' and a.attrelid = c.oid and a.attnum>0
-		"""
-		sqlcmd="""select lower(utc.COLUMN_NAME) name
-	,utc.DATA_TYPE type
-	,utc.DATA_LENGTH length
-	,utc.data_scale dec
-	,case when utc.nullable = 'Y' then 'yes' else 'no' end nullable
-	,lower(nvl(ucc.comments,utc.COLUMN_NAME)) title
-	,lower(utc.table_name) as table_name
-	from  user_tab_cols utc left join USER_COL_COMMENTS ucc on utc.table_name = ucc.table_name and utc.COLUMN_NAME = ucc.COLUMN_NAME"""
-		if tablename is not None:
-			sqlcmd = sqlcmd + """ where lower(utc.table_name) = '%s'""" % tablename.lower()
+		sqlcmd="""SELECT 
+	a.attname AS name, 
+	t.typname AS type, 
+	case t.typname
+		when 'varchar' then  a.atttypmod - 4
+		when 'numeric' then (a.atttypmod - 4) / 65536
+		else null
+	end as length,
+	case t.typname
+		when 'numeric' then (a.atttypmod - 4) % 65536
+		else null
+	end as dec,
+    case a.attnotnull
+		when 't' then 'no'
+		when 'f' then 'yes'
+	end as nullable
+	b.description AS title
+FROM pg_class c, pg_attribute a
+    LEFT JOIN pg_description b
+    ON a.attrelid = b.objoid
+        AND a.attnum = b.objsubid, pg_type t
+WHERE lower(c.relname) = '%s'
+    AND a.attnum > 0
+    AND a.attrelid = c.oid
+    AND a.atttypid = t.oid
+ORDER BY a.attnum;
+		""" % tablename.lower()
 		return sqlcmd
 	
 	def fkSQL(self,tablename=None):
@@ -116,35 +128,46 @@ where
 		return sqlcmd
 	
 	def pkSQL(self,tablename=None):
-		"""
-		select pg_attribute.attname as colname,pg_type.typname as typename,pg_constraint.conname as pk_name from 
-pg_constraint  inner join pg_class 
-on pg_constraint.conrelid = pg_class.oid 
-inner join pg_attribute on pg_attribute.attrelid = pg_class.oid 
-and  pg_attribute.attnum = pg_constraint.conkey[1]
-inner join pg_type on pg_type.oid = pg_attribute.atttypid
-where pg_class.relname = 'tablename' 
+		sqlcmd="""
+		select 
+	pg_attribute.attname as field_name,
+	lower(pg_class.relname) as table_name
+from pg_constraint 
+	inner join pg_class 
+		on pg_constraint.conrelid = pg_class.oid 
+	inner join pg_attribute 
+		on pg_attribute.attrelid = pg_class.oid 
+			and  pg_attribute.attnum = pg_constraint.conkey[1]
+	inner join pg_type 
+		on pg_type.oid = pg_attribute.atttypid
+where lower(pg_class.relname) = '%s' 
 and pg_constraint.contype='p'
-		"""
-		sqlcmd = """
-select
- lower(col.table_name) table_name,
- lower(col.column_name) as field_name
-from
- user_constraints con,user_cons_columns col
-where
- con.constraint_name=col.constraint_name and con.constraint_type='P'"""
-		if tablename is not None:
-			sqlcmd = sqlcmd + """ and lower(col.table_name)='%s'""" % tablename.lower()
+		""" % tablename.lower()
 		return sqlcmd
 		
 	def indexesSQL(self,tablename=None):
-		sqlcmd = """select 
-  lower(a.index_name) index_name,
-  lower(a.UNIQUENESS) is_unique,
-  lower(b.column_name) column_name 
-from user_indexes a, user_ind_columns b
-where a.index_name = b.index_name"""
+		sqlcmd = """select
+    i.relname as index_name,
+	case ix.INDISUNIQUE
+		when 't' then 'unique'
+		else ''
+	end as is_unique,
+    a.attname as column_name
+from
+    pg_class t,
+    pg_class i,
+    pg_index ix,
+    pg_attribute a
+where
+    t.oid = ix.indrelid
+    and i.oid = ix.indexrelid
+    and a.attrelid = t.oid
+    and a.attnum = ANY(ix.indkey)
+    and t.relkind = 'r'
+    and lower(t.relname) = '%s'
+order by
+    t.relname,
+    i.relname""" % tablename.lower()
 		if tablename is not None:
 			sqlcmd += """  and lower(a.table_name) = lower('%s')"""  % tablename.lower()
 		return sqlcmd
