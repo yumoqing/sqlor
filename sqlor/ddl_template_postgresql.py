@@ -36,8 +36,8 @@ CREATE TABLE {{summary[0].name}}
 {% for v in indexes %}
 CREATE {% if v.idxtype=='unique' %}UNIQUE{% endif %} INDEX {{summary[0].name}}_{{v.name}} ON {{summary[0].name}}({{",".join(v.idxfields)}});
 {%- endfor -%}
-COMMENT ON TABLE {{summary[0].name}} IS '{{summary[0].title.decode('utf8')}}';
+COMMENT ON TABLE {{summary[0].name}} IS '{{summary[0].title}}';
 {% for field in fields %}
-COMMENT ON COLUMN {{summary[0].name}}.{{field.name}} is '{{field.title.decode('utf8')}}';
+COMMENT ON COLUMN {{summary[0].name}}.{{field.name}} is '{{field.title}}';
 {% endfor %}
 """
