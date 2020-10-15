@@ -45,17 +45,16 @@ class PostgreSQLor(SQLor):
 			'select':select_stmt,
 		}
 		
-	def placeHolder(self,varname):
+	def placeHolder(self,varname,i):
 		if varname=='__mainsql__' :
 			return ''
-		return ':%s' % varname
+		return '$%d' % i
 	
 	def dataConvert(self,dataList):
-		if type(dataList) == type({}):
-			return dataList
-		d = {}
-		[ d.update({i['name']:i['value']}) for i in dataList ]
-		return d
+		x = super().dataConvert(dataList)
+		if x == []:
+			return None
+		return x
 
 	def pagingSQLmodel(self):
 		return u"""select * 
@@ -71,7 +70,7 @@ where row_id >=$[from_line]$ and row_id < $[end_line]$"""
 from 
 (select a.name,c.oid
 	from
-	(select lower(tablename) as name from tables where schemaname='public') a
+	(select lower(tablename) as name from pg_tables where schemaname='public') a,
 	pg_class c
 where a.name = c.relname) x
 left join pg_description y
@@ -89,13 +88,13 @@ on x.oid=y.objoid
 		else null
 	end as length,
 	case t.typname
-		when 'numeric' then (a.atttypmod - 4) % 65536
+		when 'numeric' then (a.atttypmod - 4) %% 65536
 		else null
 	end as dec,
     case a.attnotnull
 		when 't' then 'no'
 		when 'f' then 'yes'
-	end as nullable
+	end as nullable,
 	b.description AS title
 FROM pg_class c, pg_attribute a
     LEFT JOIN pg_description b
@@ -168,7 +167,5 @@ where
 order by
     t.relname,
     i.relname""" % tablename.lower()
-		if tablename is not None:
-			sqlcmd += """  and lower(a.table_name) = lower('%s')"""  % tablename.lower()
 		return sqlcmd
 		

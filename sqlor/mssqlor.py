@@ -51,7 +51,7 @@ class MsSqlor(SQLor):
 			'select':select_stmt,
 		}
 		
-	def placeHolder(self,varname):
+	def placeHolder(self,varname,pos=None):
 		if varname=='__mainsql__' :
 			return ''
 		return '%s'

@@ -33,7 +33,7 @@ class SQLite3or(SQLor):
 	def isMe(self,name):
 		return name=='sqlite3'
 			
-	def placeHolder(self,varname):
+	def placeHolder(self,varname,pos=None):
 		if varname=='__mainsql__' :
 			return ''
 		return '?'

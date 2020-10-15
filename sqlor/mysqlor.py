@@ -64,7 +64,7 @@ class MySqlor(SQLor):
 	def _opendb(self):
 		self.conn = connector.connect(**self.dbdesc['kwargs'])
 		
-	def placeHolder(self,varname):
+	def placeHolder(self,varname,pos=None):
 		if varname=='__mainsql__' :
 			return ''
 		return '%s'
@@ -119,7 +119,7 @@ limit $[from_line]$,$[rows]$"""
 	case when character_maximum_length is null then  NUMERIC_PRECISION
 		else character_maximum_length end
 	as length,
-	NUMERIC_SCALE as dec1,
+	NUMERIC_SCALE as 'dec',
 	lower(is_nullable) as nullable,
 	column_comment as title,
 	lower(table_name) as table_name
@@ -160,7 +160,10 @@ limit $[from_line]$,$[rows]$"""
 	def indexesSQL(self,tablename=None):
 		sqlcmd = """SELECT DISTINCT
     lower(index_name) as index_name,
-	NON_UNIQUE as is_unique,
+	case NON_UNIQUE
+		when 1 then 'unique'
+	else ''
+	end as is_unique,
 	lower(column_name) as column_name
 FROM
     information_schema.statistics

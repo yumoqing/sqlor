@@ -67,6 +67,34 @@ class SQLor(object):
 		self.dataChanged = False
 		self.metadatas={}
 
+	async def get_schema(self):
+		def concat_idx_info(idxs):
+			x = []
+			n = None
+			for i in idxs:
+				if not n or n.index_name != i.index_name:
+					if n:
+						x.append(n)
+					n = i
+					n.column_name = [i.column_name]
+				else:
+					n.column_name.append(i.column_name)
+			return x
+
+		tabs = await self.tables()
+		schemas = []
+		for t in tabs:
+			primary = await self.primary(t.name)
+			indexes = concat_idx_info(await self.indexes(t.name))
+			fields = await self.fields(t.name)
+			t.primary = [f.field_name for f in primary]
+			x = {}
+			x['summary'] = [t]
+			x['indexes'] = indexes
+			x['fields'] = fields
+			schemas.append(x)
+		return schemas
+
 	def setMeta(self,tablename,meta):
 		self.metadatas[tablename.lower()] = meta
 
@@ -99,7 +127,7 @@ class SQLor(object):
 	def pagingSQLmodel(self):
 		return u""
 		
-	def placeHolder(self,varname):
+	def placeHolder(self,varname,pos=None):
 		if varname=='__mainsql__' :
 			return ''
 		return '?'
@@ -200,7 +228,7 @@ class SQLor(object):
 		sql1 = cc.convert(sql1,NS)
 		vars = sqlargsAC.findAllVariables(sql1)
 		phnamespace = {}
-		[phnamespace.update({v:self.placeHolder(v)}) for v in vars]
+		[phnamespace.update({v:self.placeHolder(v,i)}) for v,i in enumerate(vars)]
 		m_sql = sqlargsAC.convert(sql1,phnamespace)
 		newdata = []
 		for v in vars:
