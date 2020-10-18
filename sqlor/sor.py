@@ -1,3 +1,4 @@
+from traceback import print_exc
 import os  
 from asyncio import coroutine
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
@@ -87,7 +88,9 @@ class SQLor(object):
 			primary = await self.primary(t.name)
 			indexes = concat_idx_info(await self.indexes(t.name))
 			fields = await self.fields(t.name)
-			t.primary = [f.field_name for f in primary]
+			primary_fields = [f.field_name for f in primary]
+			if len(primary_fields)>0:
+				t.primary = [f.field_name for f in primary]
 			x = {}
 			x['summary'] = [t]
 			x['indexes'] = indexes
@@ -201,7 +204,6 @@ class SQLor(object):
 		markedSQL,datas = self.maskingSQL(sql,NS)
 		datas = self.dataConvert(datas)
 		try:
-			# markedSQL = markedSQL.encode('utf8')
 			if self.async_mode:
 				await cursor.execute(markedSQL,datas)
 			else:
@@ -209,6 +211,7 @@ class SQLor(object):
 
 		except Exception as e:
 			print( "markedSQL=",markedSQL,':',datas,':',e)
+			print_exc()
 			raise e
 		return 
 			
@@ -228,7 +231,7 @@ class SQLor(object):
 		sql1 = cc.convert(sql1,NS)
 		vars = sqlargsAC.findAllVariables(sql1)
 		phnamespace = {}
-		[phnamespace.update({v:self.placeHolder(v,i)}) for v,i in enumerate(vars)]
+		[phnamespace.update({v:self.placeHolder(v,i)}) for i,v in enumerate(vars)]
 		m_sql = sqlargsAC.convert(sql1,phnamespace)
 		newdata = []
 		for v in vars:

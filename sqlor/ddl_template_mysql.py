@@ -39,7 +39,9 @@ CREATE TABLE {{summary[0].name}}
 {% for field in fields %}
   {{field.name}} {{typeStr(field.type,field.length,field.dec)}} {{nullStr(field.nullable)}} {%if field.title -%} comment '{{field.title}}'{%- endif %}{%- if not loop.last -%},{%- endif -%}
 {% endfor %}
+{% if summary[0].primary and len(summary[0].primary)>0 %}
 {{primary()}}
+{% endif %}
 )
 engine=innodb 
 default charset=utf8 
