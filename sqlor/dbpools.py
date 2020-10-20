@@ -345,13 +345,7 @@ class DBPools:
 			kw['sor'] = sor
 			try:
 				desc = await func(dbname,NS,*args,**kw)
-				total = await sor.record_count(desc,NS)
-				recs = await sor.pagingdata(desc,NS)
-				data = {
-					"total":total,
-					"rows":recs
-				}
-				return DictObject(**data)
+				return await sor.runSQLPaging(desc,NS)
 			except Exception as e:
 				print('error',e)
 				raise e

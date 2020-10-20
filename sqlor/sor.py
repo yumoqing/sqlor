@@ -373,6 +373,15 @@ class SQLor(object):
 		t = c.recs[0]['rcnt']
 		return t
 
+	async def runSQLPaging(self,desc,NS):
+		total = await self.record_count(desc,NS)
+		recs = await self.pagingdata(desc,NS)
+		data = {
+			"total":total,
+			"rows":recs
+		}
+		return DictObject(**data)
+		
 	async def pagingdata(self,desc,NS):
 		paging_desc = {}
 		paging_desc.update(desc)
