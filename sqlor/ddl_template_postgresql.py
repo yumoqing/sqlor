@@ -23,7 +23,7 @@ NOT NULL
 {%- endif -%}
 {% endmacro %}
 {% macro primary() %}
-,primary key({{','.join(summary[0].primary)}})
+,PRIMARY KEY({{','.join(summary[0].primary)}})
 {% endmacro %}
 DROP TABLE IF EXISTS {{summary[0].name}};
 CREATE TABLE {{summary[0].name}}
