@@ -43,6 +43,18 @@ dbs={
                         "host":"localhost"
                 }
         },
+		"stock":{
+			"driver":"aiopg",
+			"async_mode":True,
+			"codeing":"utf-8",
+			"dbname":"stock",
+			"kwargs":{
+				"dbname":"stock",
+				"user":"test",
+				"password":"test123",
+				"host":"127.0.0.1"
+			}
+		},
         "cfae":{
                 "driver":"mysql.connector",
                 "coding":"utf8",
