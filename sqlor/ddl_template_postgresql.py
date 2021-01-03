@@ -4,7 +4,7 @@ VARCHAR({{len}})
 {%- elif type=='char' -%}
 CHAR({{len}})
 {%- elif type=='long' or type=='int' or type=='short' -%}
-INTEGER
+NUMERIC(30,0)
 {%- elif type=='float' or type=='double' or type=='ddouble' -%}
 NUMERIC({{len}},{{dec}})
 {%- elif type=='date' -%}

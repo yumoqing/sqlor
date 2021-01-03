@@ -201,7 +201,7 @@ class SQLor(object):
 		using a opened cursor to run a SQL statment with variable, the variable is setup in NS namespace
 		return a cursor with data
 		"""					
-		markedSQL,datas = self.maskingSQL(sql,NS)
+		markedSQL, datas = self.maskingSQL(sql,NS)
 		datas = self.dataConvert(datas)
 		try:
 			if self.async_mode:

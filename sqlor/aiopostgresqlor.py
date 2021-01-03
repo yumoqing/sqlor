@@ -5,4 +5,6 @@ class AioPostgresqlor(PostgreSQLor):
 	def isMe(self,name):
 		return name=='aiopg'
 
+	async def commit(self):
+		pass
 

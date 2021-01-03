@@ -256,7 +256,10 @@ class DBPools:
 		await p.release(conn)
 		"""
 		if self.isAsyncDriver(dbname):
-			await cur.close()
+			try:
+				await cur.close()
+			except:
+				pass
 		else:
 			try:
 				cur.fetchall()

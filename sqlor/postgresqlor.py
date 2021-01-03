@@ -38,7 +38,7 @@ class PostgreSQLor(SQLor):
 	}
 	@classmethod
 	def isMe(self,name):
-		return name=='psycopg2' or name=='aiopg' or name=='pyguass'
+		return name=='psycopg2' or name=='pyguass'
 
 	def grammar(self):
 		return {
@@ -48,13 +48,13 @@ class PostgreSQLor(SQLor):
 	def placeHolder(self,varname,i):
 		if varname=='__mainsql__' :
 			return ''
-		return '$%d' % i
+		return '%%(%s)s' % varname
 	
 	def dataConvert(self,dataList):
-		x = super().dataConvert(dataList)
-		if x == []:
-			return None
-		return x
+		if type(dataList) == type({}):
+			return dataList
+		d = { i['name']:i['value'] for i in dataList }
+		return d
 
 	def pagingSQLmodel(self):
 		return u"""select * 
