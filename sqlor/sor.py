@@ -1,5 +1,6 @@
 from traceback import print_exc
 import os  
+import decimal
 from asyncio import coroutine
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 import sys
@@ -13,6 +14,11 @@ from appPublic.myTE import MyTemplateEngine
 from appPublic.objectAction import ObjectAction
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
 from .filter import DBFilter
+
+def db_type_2_py_type(o):
+	if isinstance(o,decimal.Decimal):
+		return float(o)
+	return o
 
 class SQLorException(Exception,object):
 	def __int__(self,**kvs):
@@ -273,7 +279,7 @@ class SQLor(object):
 			while rec is not None:
 				dic = {}
 				for i in range(len(fields)):
-					dic.update({fields[i]:rec[i]})
+					dic.update({fields[i] : db_type_2_py_type(rec[i])})
 				callback(DictObject(**dic),**kwargs)
 				if self.async_mode:
 					rec = await cur.fetchone()
@@ -511,9 +517,7 @@ class SQLor(object):
 			return desc
 		desc = {}
 		summary = [ i for i in await self.tables() if tablename.lower() == i.name ]
-		print('summary=',summary)
 		pris = await self.primary(tablename)
-		print('primary key=',pris)
 		primary = [i.name for i in pris ]
 		summary[0]['primary'] = primary
 		desc['summary'] = summary
