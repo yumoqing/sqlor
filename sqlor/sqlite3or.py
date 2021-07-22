@@ -3,30 +3,22 @@ from .sor import SQLor
 
 class SQLite3or(SQLor):
 	db2modelTypeMapping = {
-		'char':'char',
-		'nchar':'str',
-		'text':'text',
-		'ntext':'text',
-		'varchar':'str',
-		'nvarchar':'str',
+		'text':'str',
 		'blob':'file',
+		'int':'long',
 		'integer':'long',
-		'double':'float',
-		'date':'date',
-		'time':'time',
-		'timestamp':'timestamp',
-		'number':'long',
+		'real':'float',
 	}
 	model2dbTypemapping = {
-		'date':'date',
-		'time':'time',
-		'timestamp':'timestamp',
-		'str':'nvarchar',
-		'char':'char',
+		'date':'text',
+		'time':'text',
+		'timestamp':'text',
+		'str':'text',
+		'char':'text',
 		'short':'int',
-		'long':'integer',
-		'float':'double',
-		'text':'ntext',
+		'long':'int',
+		'float':'real',
+		'text':'text',
 		'file':'blob',
 	}
 	@classmethod
@@ -54,7 +46,7 @@ class SQLite3or(SQLor):
 		return sqlcmd
 	
 	def fieldsSQL(self,tablename):
-		sqlcmd="""PRAGMA table_info('%s')""" % tablename.lower()
+		# sqlcmd="""PRAGMA table_info('%s')""" % tablename.lower()
 		return sqlcmd
 
 	def fields(self,tablename):
@@ -78,7 +70,7 @@ class SQLite3or(SQLor):
 			r['title'] = r['name']
 		ret = []
 		for r in recs:
-			r.update({'type':self.db2modelTypeMapping[r['type'].lower()]})
+			r.update({'type':self.db2modelTypeMapping.get(r['type'].lower(),'text')})
 			r.update({'name':r['name'].lower()})
 			ret.append(r)
 		return ret
@@ -97,4 +89,12 @@ class SQLite3or(SQLor):
 		
 	def pkSQL(self,tablename):
 		sqlcmd = ""
+		return sqlcmd
+
+	def indexesSQL(self,tablename=None):
+		sqlcmd = """select * from sqlite_master 
+where lower(type) = 'index'
+	"""
+		if tablename:
+			sqlcmd += "and lower(tbl_name)='" + tablename.lower() + "' "
 		return sqlcmd
