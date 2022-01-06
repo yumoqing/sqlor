@@ -516,7 +516,7 @@ class SQLor(object):
 		if desc:
 			return desc
 		desc = {}
-		summary = [ i for i in await self.tables() if tablename.lower() == i.name ]
+		summary = [ i.to_dict() for i in await self.tables() if tablename.lower() == i.name.lower() ]
 		pris = await self.primary(tablename)
 		primary = [i.name for i in pris ]
 		summary[0]['primary'] = primary
@@ -569,19 +569,31 @@ class SQLor(object):
 
 	async def R(self,tablename,ns,filters=None):
 		desc = await self.I(tablename)
-		sql = 'select * from  %s where 1=1' % tablename.lower()
+		sql = 'select * from  %s' % tablename.lower()
 		if filters:
 			dbf = DBFilter(filters)
-			sql = '%s and %s' % (sql, dbf.genFilterString())
+			sub =  dbf.genFilterString(ns)
+			if sub:
+				sql = '%s where %s' % (sql, sub)
+
 		else:
 			fields = [ i['name'] for i in desc['fields'] ]
 			c = [ '%s=${%s}$' % (k,k) for k in ns.keys() if k in fields ]
 			if len(c) > 0:
-				sql = '%s and %s' % (sql,' and '.join(c))
+				sql = '%s where %s' % (sql,' and '.join(c))
+
 		if 'page' in ns.keys():
 			if not 'sort' in ns.keys():
 				ns['sort'] = desc['summary'][0]['primary'][0]
-			return await self.pagingdata({'sql_string':sql},ns)
+			dic = {
+				"sql_string":sql
+			}
+			total = await self.record_count(dic,ns)
+			rows = await self.pagingdata(dic,ns)
+			return {
+				'total':total,
+				'rows':rows
+			}
 		else:
 			return await self.sqlExe(sql,ns)
 

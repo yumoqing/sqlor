@@ -14,16 +14,10 @@
 {
 	"and":[
 		{
-			"lv":{
-				"tblabbr":"a1",
-				"field":"field1"
-			}
+			"field":'field1'
 			"op":"=",
-			"rv":{
-				"type":"field",
-				"tblabbr":"table1"
-				"field":"field2"
-			}
+			"const":1
+			"var":"var1"
 		},
 		{
 			"or":[...]
@@ -40,67 +34,84 @@ class DBFilter(object):
 	def __init__(self,filterjson):
 		self.filterjson = filterjson
 		
-	def save(self,fpath):
-		pass
-		
-	def getArguments(self):
-		pass
-	
-	def genFilterString(self):
-		ret = self._genFilterSQL(self.filterjson)
+	def genFilterString(self, ns={}):
+		self.consts = {}
+		ret = self._genFilterSQL(self.filterjson, ns)
+		ns.update(self.consts)
 		return ret
 	
-	def _genFilterSQL(self,fj):
-		keys =  fj.keys()
+	def get_variables(self):
+		return self.get_filters_variables(self.filterjson)
+
+	def get_filters_variables(self, filters):
+		vs = {}
+		keys = [ k for k in filters.keys() ]
+		if len(keys) == 1:
+			fs = filters[keys[0]]
+			if isinstance(fs, list):
+				for f in fs:
+					v = self.get_filters_variables(f)
+					if v:
+						vs.update(v)
+				return vs
+			else:
+				v = self.get_filters_variables(fs)
+				if v:
+					vs.update(v)
+				return vs
+		if 'var' in keys:
+			return {
+				filters['var']:filters['field']
+			}
+		return None
+
+	def _genFilterSQL(self,fj, ns):
+		keys = [ i for i in fj.keys()]
 		if len(keys) == 1:
 			key = keys[0]
 			if key.lower() in ['and','or']:
 				if type(fj[key]) != type([]) or len(fj[key])<2:
 					raise Exception(key + ':' + json.dumps(fj[key]) + ':is not a array, or array length < 2')
+				subsqls = [self._genFilterSQL(f, ns) for f in fj[key]]
+				subsqls = [ s for s in subsqls if s is not None]
+				if len(subsqls) < 1:
+					return None
+				if len(subsqls) < 2:
+					return subsqls[0]
+
 				a  = ' %s ' % key
-				return a.join([self._genFilterSQL(f) for f in fj[key] ])
+				sql =  a.join(subsqls)
+				if key == 'or':
+					return ' (%s) ' % sql
+				return sql
 			if key.lower() == 'not':
 				if type(fj[key]) != type({}):
 					raise Exception(key + ':' + json.dumps(fj[key]) + ':is not a dict')
 				a  = ' %s ' % key
-				return a + self._genFilterSQL(fj[key])
-		return self._genFilterItems(fj)
+				sql = self._genFilterSQL(fj[key], ns)
+				if not sql:
+					return None
+				return ' not (%s) ' % sql
+		return self._genFilterItems(fj, ns)
 			
-	def _genFilterItems(self,fj):
-		keys = fj.keys()
-		assert 'lv' in keys
-		assert 'op' in keys
-		assert 'rv' in keys
-		op = fj['op'].lower()
-		assert op in ['=','<>','>','<','>=','<=','in','not in']
-		return self._genFilterFieldValue(fj['lv']) + ' ' + fj['op'] + ' ' + self._genFilterRightValue(fj['rv'])
-
-	def _genFilterFieldValue(self,fj):
+	def _genFilterItems(self,fj, ns):
 		keys = fj.keys()
 		assert 'field' in keys
-		ret = fj['field']
-		if 'tblabbr' in keys:
-			ret = fj['tblabbr'] + '.' + ret
-		return  ret
+		assert 'op' in keys
+		assert 'const' in keys or 'var' in keys
+		op = fj.get('op')
+		assert op in ['=','<>','>','<','>=','<=','in','not in']
 
-	def _genFilterRightValue(self,fj):
-		keys = fj.keys()
-		assert 'type' in keys
-		if fj['type'] == 'field':
-			return self._genFilterFieldValue(fj)
-		if fj['type'] == 'const':
-			return self._genFilterConstValue(fj)
-		if fj['type'] == 'parameter':
-			return self._getFilterParameterValue(fj)
-	
-	def _genFilterConstValue(self,fj):
-		keys = fj.keys()
-		assert 'value' in keys
-		return fj['value']
-	
-	def _getFilterParameterValue(self,fj):
-		keys = fj.keys()
-		assert 'parameter' in keys
-		return fj['parameter']
-
-
+		var = fj.get('var')
+		if var and not var in ns.keys():
+			return None
+			
+		if 'const' in keys:
+			cnt = len(self.consts.keys())
+			name = f'filter_const_{cnt}'
+			self.consts.update({nmae:fj.get('const')})
+			sql = '%s %s ${%s}$' % (fj.get('field'), fj.get('op'), name)
+			return sql
+		
+		sql = '%s %s ${%s}$' % (fj.get('field'), fj.get('op'), fj.get('var'))
+		return sql
