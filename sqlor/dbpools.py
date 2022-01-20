@@ -177,6 +177,12 @@ class DBPools:
 		self._cpools = {}
 		self.databases = databases
 		self.meta = {}
+
+	def get_dbname(self, name):
+		desc = self.database.get(name)
+		if not desc:
+			return None
+		return desc.get('dbname')
 	
 	def addDatabase(self,name,desc):
 		self.databases[name] = desc

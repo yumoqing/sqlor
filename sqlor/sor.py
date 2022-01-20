@@ -68,6 +68,9 @@ class SQLor(object):
 		self.sqlvp = sqlvp
 		self.sqlvs = sqlvs
 		self.dbdesc = dbdesc
+		self.dbname = self.dbdesc.get('dbname')
+		if self.dbname:
+			self.dbname = self.dbname.lower()
 		self.writer = None
 		self.convfuncs = {}
 		self.cc = ConditionConvert()
@@ -564,12 +567,12 @@ class SQLor(object):
 		fields = [ i['name'] for i in desc['fields']]
 		fns = ','.join(fields)
 		vfns = ','.join(['${%s}$' % n for n in fields ])
-		sql = 'insert into %s (%s) values (%s)' % (tablename,fns,vfns)
+		sql = 'insert into %s (%s.%s) values (%s)' % (self.dbname, tablename,fns,vfns)
 		await self.runSQL({'sql_string':sql},ns,None)
 
 	async def R(self,tablename,ns,filters=None):
 		desc = await self.I(tablename)
-		sql = 'select * from  %s' % tablename.lower()
+		sql = 'select * from  %s.%s' % (self.dbname, tablename.lower())
 		if filters:
 			dbf = DBFilter(filters)
 			sub =  dbf.genFilterString(ns)
@@ -606,7 +609,7 @@ class SQLor(object):
 		u = [ '%s = ${%s}$' % (i,i) for i in newData ]
 		c_str = ','.join(c)
 		u_str = ','.join(u)
-		sql = 'update %s set %s where %s' % (tablename,
+		sql = 'update %s.%s set %s where %s' % (self.dbname, tablename,
 					u_str,c_str)
 		await self.runSQL({'sql_string':sql},ns,None)
 		pass
@@ -617,7 +620,7 @@ class SQLor(object):
 		condi = [ i for i in desc['summary'][0]['primary']]
 		c = [ '%s = ${%s}$' % (i,i) for i in condi ]
 		c_str = ','.join(c)
-		sql = 'delete from %s where %s' % (tablename,c_str)
+		sql = 'delete from %s.%s where %s' % (self.dbname, tablename,c_str)
 		await self.runSQL({'sql_string':sql},ns,None)
 
 
