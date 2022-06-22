@@ -2,14 +2,14 @@
 
 
 from distutils.core import setup
-from setuptools import setup, find_packages
+try:
+	from setuptools import setup, find_packages
+except:
+	from distutils.core import setup
 
-# usage:
-# python setup.py bdist_wininst generate a window executable file
-# python setup.py bdist_egg generate a egg file
-# Release information about eway
+from sqlor.version import __version__
 
-version = "0.0.2"
+version = __version__
 name = "sqlor"
 description = "sqlor"
 author = "yumoqing"
