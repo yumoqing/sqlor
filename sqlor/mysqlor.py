@@ -50,7 +50,7 @@ class MySqlor(SQLor):
 	}
 	@classmethod
 	def isMe(self,name):
-		if  name=='pymysql'
+		if name=='pymysql':
 			return True
 		if name=='aiomysql':
 			return True
