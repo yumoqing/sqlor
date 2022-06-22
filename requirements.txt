@@ -1,5 +1,5 @@
 aiomysql
-mysql-connector
+PyMySQL
 aiosqlite
 asyncio
 jinja2

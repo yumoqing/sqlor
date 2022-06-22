@@ -1,5 +1,5 @@
 # -*- coding:utf8 -*-
-from mysql import connector
+import pymysql
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
 
 from .sor import SQLor
@@ -50,7 +50,7 @@ class MySqlor(SQLor):
 	}
 	@classmethod
 	def isMe(self,name):
-		if  name=='mysql.connector':
+		if  name=='pymysql'
 			return True
 		if name=='aiomysql':
 			return True
@@ -62,7 +62,7 @@ class MySqlor(SQLor):
 		}
 		
 	def _opendb(self):
-		self.conn = connector.connect(**self.dbdesc['kwargs'])
+		self.conn = pymysql.connect(**self.dbdesc['kwargs'])
 		
 	def placeHolder(self,varname,pos=None):
 		if varname=='__mainsql__' :
