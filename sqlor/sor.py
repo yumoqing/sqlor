@@ -567,7 +567,7 @@ class SQLor(object):
 		fields = [ i['name'] for i in desc['fields']]
 		fns = ','.join(fields)
 		vfns = ','.join(['${%s}$' % n for n in fields ])
-		sql = 'insert into %s (%s.%s) values (%s)' % (self.dbname, tablename,fns,vfns)
+		sql = 'insert into %s.%s (%s.%s) values (%s)' % (self.dbname, tablename, tablename,fns,vfns)
 		await self.runSQL({'sql_string':sql},ns,None)
 
 	async def R(self,tablename,ns,filters=None):
