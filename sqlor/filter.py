@@ -28,7 +28,10 @@
 	]
 }
 """
-import ujson as json
+try:
+	import ujson as json
+except:
+	import json
 
 class DBFilter(object):
 	def __init__(self,filterjson):
