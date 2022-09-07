@@ -1,5 +1,4 @@
 # -*- coding:utf8 -*-
-import pymysql
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
 
 from .sor import SQLor
@@ -52,17 +51,12 @@ class MySqlor(SQLor):
 	def isMe(self,name):
 		if name=='pymysql':
 			return True
-		if name=='aiomysql':
-			return True
 		return False
 	
 	def grammar(self):
 		return {
 			'select':select_stmt,
 		}
-		
-	def _opendb(self):
-		self.conn = pymysql.connect(**self.dbdesc['kwargs'])
 		
 	def placeHolder(self,varname,pos=None):
 		if varname=='__mainsql__' :
