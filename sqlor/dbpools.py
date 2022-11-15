@@ -234,7 +234,10 @@ class DBPools:
 		conn = None
 		cur = None
 		if self.isAsyncDriver(dbname):
-			conn = await driver.connect(**dbdesc['kwargs'])
+			if dbdesc['driver'] == 'sqlite3':
+                conn = await driver.connect(dbdesc['kwargs']['dbname'])
+            else:
+                conn = await driver.connect(**dbdesc['kwargs'])
 			cur = await conn.cursor()
 			return True,conn,cur
 		else:
