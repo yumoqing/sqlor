@@ -1,4 +1,4 @@
-sqlite_ddl_tmpl = """{% macro typeStr(type,len,dec) %}
+sqlite3_ddl_tmpl = """{% macro typeStr(type,len,dec) %}
 {%- if type in ['str', 'char', 'date', 'time', 'datetime', 'timestamp'] -%}
 TEXT
 {%- elif type in ['long', 'int', 'short', 'longlong' ] -%}
@@ -23,7 +23,7 @@ drop table if exists {{summary[0].name}};
 CREATE TABLE {{summary[0].name}}
 (
 {% for field in fields %}
-  `{{field.name}}` {{typeStr(field.type,field.length,field.dec)}} {{nullStr(field.nullable)}} {%if field.title -%}  -- {{field.title}}{%- endif %}{%- if not loop.last -%},{%- endif -%}
+  `{{field.name}}` {{typeStr(field.type,field.length,field.dec)}} {{nullStr(field.nullable)}}{%- if not loop.last -%},{%- endif -%} {%if field.title -%}  -- {{field.title}}{%- endif %}
 {% endfor %}
 {% if summary[0].primary and len(summary[0].primary)>0 %}
 {{primary()}}
