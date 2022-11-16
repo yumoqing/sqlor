@@ -22,7 +22,7 @@ if __name__ == '__main__':
 		sys.exit(1)
 	dbs = {
 		"db":{
-			"driver":"sqlite3",
+			"driver":"aiosqlite",
 			"kwargs":{
 				"dbname":sys.argv[1]
 			}
