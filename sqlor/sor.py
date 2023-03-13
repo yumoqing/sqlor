@@ -8,7 +8,6 @@ import codecs
 import re
 import json
 from appPublic.myImport import myImport
-from appPublic.dictObject import DictObject,dictObjectFactory
 from appPublic.unicoding import uDict
 from appPublic.myTE import MyTemplateEngine
 from appPublic.objectAction import ObjectAction
@@ -283,7 +282,7 @@ class SQLor(object):
 				dic = {}
 				for i in range(len(fields)):
 					dic.update({fields[i] : db_type_2_py_type(rec[i])})
-				callback(DictObject(**dic),**kwargs)
+				callback(dic,**kwargs)
 				if self.async_mode:
 					rec = await cur.fetchone()
 				else:
@@ -389,7 +388,7 @@ class SQLor(object):
 			"total":total,
 			"rows":recs
 		}
-		return DictObject(**data)
+		return data
 		
 	async def pagingdata(self,desc,NS):
 		paging_desc = {}
@@ -424,7 +423,7 @@ class SQLor(object):
 	async def resultFields(self,desc,NS):
 		NS.update(rows=1,page=1)
 		r = await self.pagingdata(desc,NS)
-		ret = [ DictObject(**{'name':i[0],'type':i[1]}) for i in self.cur.description ]
+		ret = [ {'name':i[0],'type':i[1]} for i in self.cur.description ]
 		return ret
 		
 	async def runSQL(self,desc,NS,callback,**kw):
@@ -435,8 +434,7 @@ class SQLor(object):
 				self.ns[name] = []
 
 			def handler(self,rec):
-				obj = DictObject(**rec)
-				self.ns[self.name].append(obj)
+				self.ns[self.name].append(rec)
 
 		cur = self.cursor()
 		sql = self.getSQLfromDesc(desc)
@@ -456,7 +454,7 @@ class SQLor(object):
 	async def sqlExe(self,sql,ns):
 		ret = []
 		await self.execute(sql,ns,
-			callback=lambda x:ret.append(DictObject(**x)))
+			callback=lambda x:ret.append(x))
 		return ret
 
 	async def tables(self):
@@ -519,9 +517,9 @@ class SQLor(object):
 		if desc:
 			return desc
 		desc = {}
-		summary = [ i.to_dict() for i in await self.tables() if tablename.lower() == i.name.lower() ]
+		summary = [ i for i in await self.tables() if tablename.lower() == i['name'].lower() ]
 		pris = await self.primary(tablename)
-		primary = [i.name for i in pris ]
+		primary = [i['name'] for i in pris ]
 		summary[0]['primary'] = primary
 		desc['summary'] = summary
 		desc['fields'] = await self.fields(tablename=tablename)
@@ -529,19 +527,19 @@ class SQLor(object):
 		idx = {}
 		idxrecs = await self.indexes(tablename)
 		for idxrec in idxrecs:
-			if idxrec.index_name == 'primary':
+			if idxrec['index_name'] == 'primary':
 				continue
-			if idxrec.index_name != idx.get('name',None):
+			if idxrec['index_name'] != idx.get('name',None):
 				if idx != {}:
 					desc['indexes'].append(idx)
 					idx = {
 					}
-				idx['name'] = idxrec.index_name
-				idx['idxtype'] = 'unique' if idxrec.is_unique else 'index'
+				idx['name'] = idxrec['index_name']
+				idx['idxtype'] = 'unique' if idxrec['is_unique'] else 'index'
 				idx['idxfields'] = []
-			idx['idxfields'].append(idxrec.column_name)
+			idx['idxfields'].append(idxrec['column_name'])
 		if idx != {}:
-			desc['indexes'].append(idx)		
+			desc['indexes'].append(idx)
 		self.setMeta(tablename,desc)
 		return desc
 	
