@@ -234,18 +234,22 @@ class DBPools:
 		driver = myImport(dbdesc['driver'])
 		conn = None
 		cur = None
+		desc = dbdesc['kwargs'].copy()
+		pw = desc.get('password')
+		if pw:
+			desc['password'] = unpassword(pw)
 		if self.isAsyncDriver(dbname):
 			if dbdesc['driver'] == 'sqlite3':
-				conn = await driver.connect(dbdesc['kwargs']['dbname'])
+				conn = await driver.connect(desc['dbname'])
 			else:
-				conn = await driver.connect(**dbdesc['kwargs'])
+				conn = await driver.connect(**desc)
 			cur = await conn.cursor()
 			return True,conn,cur
 		else:
 			if dbdesc['driver'] == 'sqlite3':
-				conn = driver.connect(dbdesc['kwargs']['dbname'])
+				conn = driver.connect(desc['dbname'])
 			else:
-				conn = driver.connect(**dbdesc['kwargs'])
+				conn = driver.connect(**desc)
 			cur = conn.cursor()
 			return False,conn,cur
 
