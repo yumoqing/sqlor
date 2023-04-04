@@ -163,7 +163,7 @@ class SQLor(object):
 		default it not support paging
 		"""
 		page = int(NS.get(paging['pagename'],1))
-		rows = int(NS.get(paging['rowsname'],10))
+		rows = int(NS.get(paging['rowsname'],60))
 		sort = NS.get(paging.get('sortname','sort'),None)
 		order = NS.get(paging.get('ordername','asc'),'asc')
 		if not sort:
@@ -456,6 +456,22 @@ class SQLor(object):
 		await self.execute(sql,ns,
 			callback=lambda x:ret.append(x))
 		return ret
+
+	async def sqlPaging(self,sql,ns):
+		ret = []
+		dic = {
+			"sql_string":sql
+		}
+		page = ns.get('page')
+		if not page:
+			ns['page'] = 1
+
+		total = await self.record_count(dic,ns)
+		rows = await self.pagingdata(dic,ns)
+		return {
+			'total':total,
+			'rows':rows
+		}
 
 	async def tables(self):
 		sqlstring = self.tablesSQL()
