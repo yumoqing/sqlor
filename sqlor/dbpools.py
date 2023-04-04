@@ -11,6 +11,7 @@ from appPublic.dictObject import DictObject
 from appPublic.Singleton import SingletonDecorator
 from appPublic.myjson import loadf
 from appPublic.jsonConfig import getConfig
+from appPublic.rc4 import unpassword
 
 import threading
 from .sor import SQLor
