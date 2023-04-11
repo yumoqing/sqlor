@@ -147,7 +147,7 @@ limit $[from_line]$,$[rows]$"""
 		return sqlcmd
 
 	def pkSQL(self,tablename=None):
-		sqlcmd = """SELECT column_name as name FROM INFORMATION_SCHEMA.`KEY_COLUMN_USAGE` WHERE table_name='%s' AND constraint_name='PRIMARY'
+		sqlcmd = """SELECT distinct column_name as name FROM INFORMATION_SCHEMA.`KEY_COLUMN_USAGE` WHERE table_name='%s' AND constraint_name='PRIMARY'
 """ % tablename.lower()
 		return sqlcmd
 

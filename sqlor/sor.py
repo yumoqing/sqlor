@@ -94,6 +94,7 @@ class SQLor(object):
 		schemas = []
 		for t in tabs:
 			primary = await self.primary(t.name)
+			# print('primary=', primary)
 			indexes = concat_idx_info(await self.indexes(t.name))
 			fields = await self.fields(t.name)
 			primary_fields = [f.field_name for f in primary]
@@ -513,6 +514,7 @@ class SQLor(object):
 		sqlstring = self.pkSQL(tablename)
 		recs = []
 		await self.execute(sqlstring,{},lambda x:recs.append(x))
+		# print('sql=', sqlstring, 'recs=', recs)
 		return recs
 		
 	async def fkeys(self,tablename):
@@ -621,7 +623,7 @@ class SQLor(object):
 		newData = [ i for i in ns.keys() if i not in condi and i in fields]
 		c = [ '%s = ${%s}$' % (i,i) for i in condi ]
 		u = [ '%s = ${%s}$' % (i,i) for i in newData ]
-		c_str = ','.join(c)
+		c_str = ' and '.join(c)
 		u_str = ','.join(u)
 		sql = 'update %s.%s set %s where %s' % (self.dbname, tablename,
 					u_str,c_str)
@@ -633,7 +635,7 @@ class SQLor(object):
 		fields = [ i['name'] for i in desc['fields']]
 		condi = [ i for i in desc['summary'][0]['primary']]
 		c = [ '%s = ${%s}$' % (i,i) for i in condi ]
-		c_str = ','.join(c)
+		c_str = ' and '.join(c)
 		sql = 'delete from %s.%s where %s' % (self.dbname, tablename,c_str)
 		await self.runSQL({'sql_string':sql},ns,None)
 

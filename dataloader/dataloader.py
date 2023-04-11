@@ -1,21 +1,18 @@
 import openpyxl as xlsx
 import asyncio
+from sqlor.dbpools import DBPools
 
 class CBObject:
-	def __init__(self,name):
+	def __init__(self,db, name):
+		self.db = db
 		self.tbl = name
-		self.sql = ''
 
-	async def handle(self,dic):
-		names = ','.join(dic.keys())
-		vs = ["'%s'"%v if type(v)==type('') else str(v) for v in dic.values() ]
-		values = ','.join(vs)
-		self.sql = "insert into " + self.tbl +  \
-				" (" + names + ") values (" +  \
-				values + ");"
-		print(self.sql)
-
-
+	async def handle(self,ws):
+		db = DBPools()
+		meta = sor.I()
+		async with db.sqlorContext(self.db) as sor:
+			for rec in getRecord(ws):
+				sor.C(self.tbl, rec)
 
 typesconv = {
 	"int":int,
@@ -23,7 +20,7 @@ typesconv = {
 	"str":str,
 }
 
-async def loadData(ws,callback):
+async def getRecord(ws):
 	names = []
 	types = []
 	for i,r in enumerate(ws.rows):
@@ -40,21 +37,23 @@ async def loadData(ws,callback):
 			for j,c in enumerate(r):
 				tf = typesconv.get(types[j],None)
 				v = c.value
-				if tf is not None:
-					v = tf(v)
 				dic[names[j]] = v
-			await callback(dic)
+			yield rec
 
 async def excel2db(xlsxfile):
 	wb = xlsx.load_workbook(xlsxfile)
+	dbname = [ i[2:-3] for i in wb.sheetnames if i.startswith('__')[0]
 	for name in wb.sheetnames:
+		if name.startswith('__'):
+			continue
 		ws = wb[name]
-		cbobj = CBObject(name)
-		await loadData(ws,cbobj.handle)
+		cbobj = CBObject(dbname, name)
+		await cbobj.handle(ws)
 
 if __name__ == '__main__':
 	import sys
-
+	config = getConfig()
+	DBPools(config.databases)
 	if len(sys.argv) < 2:
 		print('%s xlsxfile' % sys.argv[0])
 		sys.exit(1)
