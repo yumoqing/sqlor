@@ -1,6 +1,8 @@
+from appPublic.jsonConfig import getConfig
 import openpyxl as xlsx
 import asyncio
 from sqlor.dbpools import DBPools
+from typeconv import convrec
 
 class CBObject:
 	def __init__(self,db, name):
@@ -9,10 +11,14 @@ class CBObject:
 
 	async def handle(self,ws):
 		db = DBPools()
-		meta = sor.I()
 		async with db.sqlorContext(self.db) as sor:
+			info = await sor.I(self.tbl)
 			for rec in getRecord(ws):
-				sor.C(self.tbl, rec)
+				r = [ v for v in rec.values() if v is not None ]
+				if len(r) == 0:
+					continue
+				rec = convrec(info, rec)
+				await sor.C(self.tbl, rec)
 
 typesconv = {
 	"int":int,
@@ -20,7 +26,7 @@ typesconv = {
 	"str":str,
 }
 
-async def getRecord(ws):
+def getRecord(ws):
 	names = []
 	types = []
 	for i,r in enumerate(ws.rows):
@@ -35,14 +41,16 @@ async def getRecord(ws):
 		else:
 			dic = {}
 			for j,c in enumerate(r):
-				tf = typesconv.get(types[j],None)
+				# tf = typesconv.get(types[j],None)
 				v = c.value
 				dic[names[j]] = v
-			yield rec
+			yield dic
 
-async def excel2db(xlsxfile):
+async def loaddatainexcel(xlsxfile):
 	wb = xlsx.load_workbook(xlsxfile)
-	dbname = [ i[2:-3] for i in wb.sheetnames if i.startswith('__')[0]
+	print(f'{wb.sheetnames=}')
+	dbname = [ i[2:-2] for i in wb.sheetnames if i.startswith('__')][0]
+	print(f'{dbname=}')
 	for name in wb.sheetnames:
 		if name.startswith('__'):
 			continue
@@ -52,10 +60,13 @@ async def excel2db(xlsxfile):
 
 if __name__ == '__main__':
 	import sys
-	config = getConfig()
+	import os
+	p = os.getcwd()
+	config = getConfig(p)
+	print(f'{config.databases=},cwd={p}')
 	DBPools(config.databases)
 	if len(sys.argv) < 2:
 		print('%s xlsxfile' % sys.argv[0])
 		sys.exit(1)
 	loop = asyncio.get_event_loop()
-	loop.run_until_complete(excel2db(sys.argv[1]))
+	loop.run_until_complete(loaddatainexcel(sys.argv[1]))
