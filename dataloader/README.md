@@ -40,5 +40,5 @@ there is a kboss database in databases, and the kboss database have two tabel na
 ![specify appcodes table](./table1.png)
 
 * Specify table appcodes_kv
-![specify table appcodes_kv](./table1.png)
+![specify table appcodes_kv](./table2.png)
 
