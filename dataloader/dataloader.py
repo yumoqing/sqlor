@@ -2,6 +2,8 @@ from appPublic.jsonConfig import getConfig
 import openpyxl as xlsx
 import asyncio
 from sqlor.dbpools import DBPools
+import aiomysql
+import aiopg
 from typeconv import convrec
 
 class CBObject:

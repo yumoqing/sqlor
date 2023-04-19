@@ -4,6 +4,7 @@ import decimal
 from asyncio import coroutine
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 import sys
+from datetime import datetime, date
 import codecs
 import re
 import json
@@ -17,6 +18,10 @@ from .filter import DBFilter
 def db_type_2_py_type(o):
 	if isinstance(o,decimal.Decimal):
 		return float(o)
+	if isinstance(o,datetime):
+		return '%020d' % int(o.timestamp() * 1000)
+	if isinstance(o, date):
+		return '%04d-%02d-%02d' % (o.year, o.month, o.day)
 	return o
 
 class SQLorException(Exception,object):
