@@ -585,7 +585,8 @@ class SQLor(object):
 
 	async def C(self,tablename,ns):
 		desc = await self.I(tablename)
-		fields = [ i['name'] for i in desc['fields']]
+		keys = ns.keys()
+		fields = [ i['name'] for i in desc['fields'] if i['name'] in keys ]
 		fns = ','.join(fields)
 		vfns = ','.join(['${%s}$' % n for n in fields ])
 		sql = 'insert into %s.%s (%s.%s) values (%s)' % (self.dbname, tablename, tablename,fns,vfns)
