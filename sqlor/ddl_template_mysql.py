@@ -25,6 +25,11 @@ longblob
 {{type}}
 {%- endif %}
 {%- endmacro %}
+
+{%- macro defaultValue(defaultv) %}
+{%- if defaultv %} DEFAULT '{{defaultv}}'{%- endif -%}
+{%- endmacro %}
+
 {% macro nullStr(nullable) %}
 {%- if nullable=='no' -%}
 NOT NULL
@@ -37,7 +42,7 @@ drop table if exists {{summary[0].name}};
 CREATE TABLE {{summary[0].name}}
 (
 {% for field in fields %}
-  `{{field.name}}` {{typeStr(field.type,field.length,field.dec)}} {{nullStr(field.nullable)}} {%if field.title -%} comment '{{field.title}}'{%- endif %}{%- if not loop.last -%},{%- endif -%}
+  `{{field.name}}` {{typeStr(field.type,field.length,field.dec)}} {{nullStr(field.nullable)}} {{defaultValue(field.default)}} {%if field.title -%} comment '{{field.title}}'{%- endif %}{%- if not loop.last -%},{%- endif -%}
 {% endfor %}
 {% if summary[0].primary and len(summary[0].primary)>0 %}
 {{primary()}}
