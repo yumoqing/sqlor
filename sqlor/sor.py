@@ -14,6 +14,7 @@ from appPublic.myTE import MyTemplateEngine
 from appPublic.objectAction import ObjectAction
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
 from .filter import DBFilter
+from .const import *
 
 def db_type_2_py_type(o):
 	if isinstance(o,decimal.Decimal):
@@ -169,7 +170,7 @@ class SQLor(object):
 		default it not support paging
 		"""
 		page = int(NS.get(paging['pagename'],1))
-		rows = int(NS.get(paging['rowsname'],60))
+		rows = int(NS.get(paging['rowsname'],ROWS))
 		sort = NS.get(paging.get('sortname','sort'),None)
 		order = NS.get(paging.get('ordername','asc'),'asc')
 		if not sort:

@@ -1,4 +1,5 @@
 # -*- coding:utf8 -*-
+from dbpools import ROWS
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
 
 from .sor import SQLor
@@ -75,7 +76,7 @@ class MySqlor(SQLor):
 		default it not support paging
 		"""
 		page = int(NS.get(paging['pagename'],1))
-		rows = int(NS.get(paging['rowsname'],10))
+		rows = int(NS.get(paging['rowsname'],ROWS))
 		sort = NS.get(paging.get('sortname','sort'),None)
 		order = NS.get(paging.get('ordername','asc'),'asc')
 		if not sort:

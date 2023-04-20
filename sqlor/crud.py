@@ -1,5 +1,6 @@
 # -*- coding:utf8 -*-
 from .dbpools import DBPools
+from .const import ROWS
 from .filter import DBFilter
 from appPublic.objectAction import ObjectAction
 from appPublic.dictObject import DictObject
@@ -31,7 +32,7 @@ class DatabaseNotfound(Exception):
 		return f'{self.dbname} not found'
 
 class CRUD(object):
-	def __init__(self,dbname,tablename,rows=10):
+	def __init__(self,dbname,tablename,rows=ROWS):
 		self.pool = DBPools()
 		if dbname not in self.pool.databases.keys():
 			raise DatabaseNotfound(dbname)
