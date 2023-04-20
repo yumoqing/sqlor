@@ -1,8 +1,8 @@
 # -*- coding:utf8 -*-
-from dbpools import ROWS
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
 
 from .sor import SQLor
+from .const import ROWS
 from .ddl_template_mysql import mysql_ddl_tmpl
 class MySqlor(SQLor):
 	ddl_template = mysql_ddl_tmpl
