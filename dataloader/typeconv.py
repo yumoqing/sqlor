@@ -14,7 +14,7 @@ def conv(info, name, value):
 	for f in fields:
 		if f['name'] == name:
 			f = convfuncs.get(f['type'], None)
-			if f is None:
+			if f is None or value is None:
 				return value
 			return f(value)
 	return value

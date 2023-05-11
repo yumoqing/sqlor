@@ -14,6 +14,8 @@ class CBObject:
 	async def handle(self,ws):
 		db = DBPools()
 		async with db.sqlorContext(self.db) as sor:
+			delete_sql = "delete from %s" % self.tbl
+			await sor.sqlExe(delete_sql, {})
 			info = await sor.I(self.tbl)
 			for rec in getRecord(ws):
 				r = [ v for v in rec.values() if v is not None ]
