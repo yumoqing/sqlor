@@ -14,7 +14,7 @@ class CBObject:
 	async def handle(self,ws):
 		db = DBPools()
 		async with db.sqlorContext(self.db) as sor:
-			delete_sql = "delete from %s" % self.tbl
+			delete_sql = "TRUNCATE TABLE %s" % self.tbl
 			await sor.sqlExe(delete_sql, {})
 			info = await sor.I(self.tbl)
 			for rec in getRecord(ws):
@@ -23,12 +23,6 @@ class CBObject:
 					continue
 				rec = convrec(info, rec)
 				await sor.C(self.tbl, rec)
-
-typesconv = {
-	"int":int,
-	"float":float,
-	"str":str,
-}
 
 def getRecord(ws):
 	names = []
@@ -45,7 +39,6 @@ def getRecord(ws):
 		else:
 			dic = {}
 			for j,c in enumerate(r):
-				# tf = typesconv.get(types[j],None)
 				v = c.value
 				dic[names[j]] = v
 			yield dic
