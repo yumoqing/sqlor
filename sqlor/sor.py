@@ -20,7 +20,8 @@ def db_type_2_py_type(o):
 	if isinstance(o,decimal.Decimal):
 		return float(o)
 	if isinstance(o,datetime):
-		return '%020d' % int(o.timestamp() * 1000)
+		# return '%020d' % int(o.timestamp() * 1000)
+		return str(o)
 	if isinstance(o, date):
 		return '%04d-%02d-%02d' % (o.year, o.month, o.day)
 	return o
