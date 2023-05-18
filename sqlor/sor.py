@@ -166,6 +166,14 @@ class SQLor(object):
 		ret = u"""select count(*) rcnt from (%s) rowcount_table""" % sql
 		return ret
 	
+	def sortSQL(self, sql, NS):
+		sort = NS.get('sort',None)
+		if sort is None:
+			return sql
+		if isinstance(sort, list):
+			sort = ','.join(sort)
+		return sql + ' ORDER BY ' + sort
+
 	def pagingSQL(self,sql,paging,NS):
 		"""
 		default it not support paging
@@ -622,6 +630,8 @@ class SQLor(object):
 				'rows':rows
 			}
 		else:
+			if ns.get('sort'):
+				sql = self.sortSQL(sql, ns)
 			return await self.sqlExe(sql,ns)
 
 	async def U(self,tablename,ns):
