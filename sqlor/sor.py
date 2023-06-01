@@ -181,7 +181,7 @@ class SQLor(object):
 		page = int(NS.get(paging['pagename'],1))
 		rows = int(NS.get(paging['rowsname'],ROWS))
 		sort = NS.get(paging.get('sortname','sort'),None)
-		if isinstance(sort, dict):
+		if isinstance(sort, list):
 			sort = ','.join(sort)
 		if not sort:
 			return sql
