@@ -66,7 +66,7 @@ class MsSqlor(SQLor):
 	def pagingSQLmodel(self):
 		return u"""select *
 from (
-	select row_number() over(order by $[sort]$ $[order]$) as _row_id,page_s.* 
+	select row_number() over(order by $[sort]$) as _row_id,page_s.* 
 	from (%s) page_s
 	) A
 where _row_id >= $[from_line]$ and _row_id < $[end_line]$"""

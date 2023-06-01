@@ -71,35 +71,8 @@ class MySqlor(SQLor):
 			d = [ i['value'] for i in dataList]
 		return tuple(d)
 
-	def pagingSQL(self,sql,paging,NS):
-		"""
-		default it not support paging
-		"""
-		page = int(NS.get(paging['pagename'],1))
-		rows = int(NS.get(paging['rowsname'],ROWS))
-		sort = NS.get(paging.get('sortname','sort'),None)
-		order = NS.get(paging.get('ordername','asc'),'asc')
-		if not sort:
-			return sql
-		if page < 1:
-			page = 1
-		from_line = (page - 1) * rows
-		end_line = page * rows + 1
-		psql = self.pagingSQLmodel()
-		ns={
-			'from_line':from_line,
-			'end_line':end_line,
-			'rows':rows,
-			'sort':sort,
-			'order':order,
-		}
-		ac = ArgsConvert('$[',']$')
-		psql = ac.convert(psql,ns)
-		retSQL=psql % sql
-		return retSQL
-		
 	def pagingSQLmodel(self):
-		return u"""select * from (%s) A order by $[sort]$ $[order]$
+		return u"""select * from (%s) A order by $[sort]$
 limit $[from_line]$,$[rows]$"""
 
 	def tablesSQL(self):

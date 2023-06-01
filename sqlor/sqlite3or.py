@@ -38,7 +38,7 @@ class SQLite3or(SQLor):
 		return tuple(d)
 
 	def pagingSQLmodel(self):
-		sql = u"""select * from (%s) order by $[sort]$ $[order]$ limit $[from_line]$,$[end_line]$"""
+		sql = u"""select * from (%s) order by $[sort]$ limit $[from_line]$,$[end_line]$"""
 		return sql
 
 	def tablesSQL(self):

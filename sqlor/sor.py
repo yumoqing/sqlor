@@ -181,7 +181,8 @@ class SQLor(object):
 		page = int(NS.get(paging['pagename'],1))
 		rows = int(NS.get(paging['rowsname'],ROWS))
 		sort = NS.get(paging.get('sortname','sort'),None)
-		order = NS.get(paging.get('ordername','asc'),'asc')
+		if isinstance(sort, dict):
+			sort = ','.join(sort)
 		if not sort:
 			return sql
 		if page < 1:
@@ -194,7 +195,7 @@ class SQLor(object):
 			'end_line':end_line,
 			'rows':rows,
 			'sort':sort,
-			'order':order,
+			'order':'',
 		}
 		ac = ArgsConvert('$[',']$')
 		psql = ac.convert(psql,ns)

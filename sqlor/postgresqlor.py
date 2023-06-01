@@ -61,7 +61,7 @@ class PostgreSQLor(SQLor):
 from (
 	select page_s.*,rownum row_id 
 	from (%s) page_s 
-	order by $[sort]$ $[order]$
+	order by $[sort]$
 	) 
 where row_id >=$[from_line]$ and row_id < $[end_line]$"""
 
