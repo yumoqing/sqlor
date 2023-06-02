@@ -426,7 +426,6 @@ class SQLor(object):
 			del cnt_desc['sql_file']
 		paging_desc['sql_string'] = self.pagingSQL(sql,
 					paging_desc.get('paging'),NS)
-		print(f'{paging_desc=}')
 
 		class Cnt:
 			def __init__(self):
