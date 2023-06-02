@@ -187,8 +187,8 @@ class SQLor(object):
 			return sql
 		if page < 1:
 			page = 1
-		from_line = (page - 1) * rows + 1
-		end_line = page * rows + 1
+		from_line = (page - 1) * rows
+		end_line = page * rows
 		psql = self.pagingSQLmodel()
 		ns={
 			'from_line':from_line,
@@ -426,6 +426,7 @@ class SQLor(object):
 			del cnt_desc['sql_file']
 		paging_desc['sql_string'] = self.pagingSQL(sql,
 					paging_desc.get('paging'),NS)
+		print(f'{paging_desc=}')
 
 		class Cnt:
 			def __init__(self):
