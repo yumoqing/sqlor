@@ -16,7 +16,7 @@ time
 {%- elif type=='datetime' -%}
 datetime
 {%- elif type=='timestamp' -%}
-TIMESTAMP
+TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 {%- elif type=='text' -%}
 longtext
 {%- elif type=='bin' -%}
