@@ -230,15 +230,14 @@ class SQLor(object):
 		datas = self.dataConvert(datas)
 		try:
 			if self.async_mode:
-				await cursor.execute(markedSQL,datas)
+				return await cursor.execute(markedSQL,datas)
 			else:
-				cursor.execute(markedSQL,datas)
+				return cursor.execute(markedSQL,datas)
 
 		except Exception as e:
 			print( "markedSQL=",markedSQL,':',datas,':',e)
 			print_exc()
 			raise e
-		return 
 			
 	def maskingSQL(self,org_sql,NS):
 		"""
@@ -286,7 +285,7 @@ class SQLor(object):
 	async def execute(self,sql,value,callback,**kwargs):
 		sqltype = self.getSqlType(sql)
 		cur = self.cursor()
-		await self.runVarSQL(cur,sql,value)
+		ret = await self.runVarSQL(cur,sql,value)
 		if sqltype == 'qry' and callback is not None:
 			fields = [ i[0].lower() for i in cur.description ]
 			rec = None
@@ -306,6 +305,7 @@ class SQLor(object):
 					rec = cur.fetchone()
 		if sqltype == 'dml':
 			self.dataChanged = True
+			return ret
 
 	async def executemany(self,sql,values):
 		cur = self.cursor()
@@ -466,12 +466,16 @@ class SQLor(object):
 		await self.execute(sql,NS,callback)
 	
 	async def sqlExecute(self,desc,NS):
-		await self.execute(desc,NS,None)
+		return await self.execute(desc,NS,None)
 	
 	async def sqlExe(self,sql,ns):
 		ret = []
-		await self.execute(sql,ns,
+		r = await self.execute(sql,ns,
 			callback=lambda x:ret.append(x))
+		sqltype = self.getSqlType(sql)
+		if sqltype == 'dml':
+			return r
+
 		return ret
 
 	async def sqlPaging(self,sql,ns):
