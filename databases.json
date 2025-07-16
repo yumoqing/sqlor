@@ -1,0 +1,26 @@
+{
+	"mysql":{
+		"driver":"aiomysql",
+		"async_mode":true,
+		"coding":"utf8",
+		"dbname":"homedata",
+		"maxconn":100,
+		"kwargs":{
+				"user":"test",
+				"db":"homedata",
+				"password":"test123",
+				"host":"localhost"
+		}
+	},
+	"sqlite3":{
+		"driver":"aiosqlite",
+		"async_mode":true,
+		"coding":"utf8",
+		"dbname":"testdb",
+		"maxconn":100,
+		"kwargs":{
+				"database":"./ttttt.db"
+		}
+	}
+}
+
