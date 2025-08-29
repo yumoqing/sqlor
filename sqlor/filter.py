@@ -32,6 +32,7 @@ try:
 	import ujson as json
 except:
 	import json
+from appPublic.log import debug
 
 class DBFilter(object):
 	operators = [
@@ -150,7 +151,7 @@ def default_filterjson(fields: list, ns: dict):
 		'op':'=',
 		'var':k
 		} for k in ns.keys() if k in fields ]
-	print(f'default_filterjson():{c=}')
+	debug(f'default_filterjson():{c=}')
 	if len(c) < 1:
 		return None
 	if len(c) < 2:
@@ -175,6 +176,6 @@ if __name__ == '__main__':
 	}
 	
 	dbf = DBFilter(fj)
-	print(fj)
-	print(dbf.gen({'name':'joe'}))
-	print(f'{dbf.consts=}')
+	debug(fj)
+	debug(dbf.gen({'name':'joe'}))
+	debug(f'{dbf.consts=}')
