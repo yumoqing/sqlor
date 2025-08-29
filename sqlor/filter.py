@@ -145,7 +145,7 @@ class DBFilter(object):
 		return sql
 
 def default_filterjson(fields: list, ns: dict):
-	fj = {}
+	debug(f'{fields=}, {ns=}')
 	c = [ {
 		'field':k,
 		'op':'=',
