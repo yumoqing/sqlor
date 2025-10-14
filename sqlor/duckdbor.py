@@ -2,12 +2,7 @@
 from appPublic.argsConvert import ArgsConvert, ConditionConvert
 from .sor import SQLor
 from .const import ROWS
-
-duckdb_ddl_tmpl = {
-	# 可以按需扩展
-	'create_table': "CREATE TABLE {table} ({fields})",
-	'drop_table': "DROP TABLE IF EXISTS {table}",
-}
+from .ddl_template_duckdb import duckdb_ddl_tmpl
 
 class DuckDBor(SQLor):
 	"""
