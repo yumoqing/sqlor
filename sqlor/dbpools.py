@@ -221,6 +221,9 @@ class DBPools:
 				await sqlor.commit()
 			await self.freeSqlor(sqlor)
 	
+	def get_exception(self):
+		return self.e_except
+
 	async def _aquireConn(self,dbname):
 		"""
 		p = self._cpools.get(dbname)
