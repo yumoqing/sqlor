@@ -183,7 +183,7 @@ class DBPools:
 		self.meta = {}
 
 	def get_dbname(self, name):
-		desc = self.database.get(name)
+		desc = self.databases.get(name)
 		if not desc:
 			return None
 		return desc.get('dbname')
