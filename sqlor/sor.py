@@ -680,3 +680,5 @@ class SQLor(object):
 		ns = await rf.exe(f'{self.dbname}:{tablename}:d:after', ns)
 		return r
 
+	async def connect(desc):
+		raise Exception('Not Implemented')

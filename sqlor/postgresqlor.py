@@ -1,3 +1,4 @@
+import aiopg
 from .sor import SQLor
 from .ddl_template_postgresql import postgresql_ddl_tmpl
 
@@ -169,3 +170,21 @@ order by
     i.relname""" % tablename.lower()
 		return sqlcmd
 		
+	async def connect():
+		"""
+		kwargs:
+			dbname:
+			user:
+			password:
+			host:
+			port:
+		"""
+		kwargs = self.dbdesc
+		self.conn = await self.connect(**kwargs)
+		self.cur = await self.conn.cursor()
+		self.dbname = kwargs['dbname']
+	
+	async def close():
+		await self.cur.close()
+		await self.conn.close()
+

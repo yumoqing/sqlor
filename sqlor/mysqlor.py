@@ -1,8 +1,7 @@
 # -*- coding:utf8 -*-
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
-
+import aiomysql
 from .sor import SQLor
-from .const import ROWS
 from .ddl_template_mysql import mysql_ddl_tmpl
 class MySqlor(SQLor):
 	ddl_template = mysql_ddl_tmpl
@@ -141,3 +140,22 @@ WHERE
 		if tablename is not None:
 			sqlcmd = sqlcmd + """	AND table_name = '%s'""" % tablename.lower()
 		return sqlcmd
+
+	async def connect():
+		"""
+		kwargs:
+			host:
+			port:
+			user:
+			password:
+			db:
+		"""
+		dbdesc = self.dbdesc
+		self.conn = await aiomysql.connect(**desc['kwargs])
+		self.cur = await self.cursor()
+		aelf.dbname = desc['kwargs']['db']
+
+	async def close():
+		await self.cursor.close()
+		await self.conn.close()
+
