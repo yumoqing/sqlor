@@ -90,7 +90,7 @@ class SQLor(object):
 
 	def unpassword(self):
 		key=getConfig().password_key
-		self.desc.kwargs.password = aes_decode_b64(key, self.desc.kwargs.password)
+		self.dbdesc.password = aes_decode_b64(key, self.dbdesc.password)
 
 	async def get_schema(self):
 		def concat_idx_info(idxs):
