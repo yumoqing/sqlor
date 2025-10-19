@@ -151,9 +151,9 @@ WHERE
 			db:
 		"""
 		dbdesc = self.dbdesc
-		self.conn = await aiomysql.connect(**desc['kwargs])
+		self.conn = await aiomysql.connect(**dbdesc)
 		self.cur = await self.cursor()
-		aelf.dbname = desc['kwargs']['db']
+		aelf.dbname = dbdesc.get('db')
 
 	async def close():
 		await self.cursor.close()
