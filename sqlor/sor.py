@@ -452,7 +452,7 @@ class SQLor(object):
 	async def tables(self):
 		sqlstring = self.tablesSQL()
 		ret = []
-		await self.execute(sqlstring,{},lambda x:ret.append(x))
+		ret = await self._get_data(sqlstring,{})
 		return ret
 	
 	def indexesSQL(self,tablename):
