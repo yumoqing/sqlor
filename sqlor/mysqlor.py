@@ -141,7 +141,7 @@ WHERE
 			sqlcmd = sqlcmd + """	AND table_name = '%s'""" % tablename.lower()
 		return sqlcmd
 
-	async def connect():
+	async def connect(self):
 		"""
 		kwargs:
 			host:
@@ -155,7 +155,7 @@ WHERE
 		self.cur = await self.cursor()
 		aelf.dbname = dbdesc.get('db')
 
-	async def close():
+	async def close(self):
 		await self.cursor.close()
 		await self.conn.close()
 
