@@ -411,7 +411,7 @@ class SQLor(object):
 	def isSelectSql(self,sql):
 		return self.getSqlType(sql) == 'qry'
 
-	async def record_count(self,sql,NS):
+	async def record_count(self, sql, NS):
 		sql = self.recordCnt(sql)
 		async for r in self._get_data(sql, NS):
 			t = r.rcnt
@@ -442,14 +442,21 @@ class SQLor(object):
 	async def sqlExecute(self,desc,NS):
 		return await self.execute(desc,NS,None)
 	
-	async def sqlExe(self,sql,ns):
-		ret = []
-		r = await self.execute(sql,ns,
-			callback=lambda x:ret.append(x))
+	async def sqlExe(self, sql, ns):
 		sqltype = self.getSqlType(sql)
-		if sqltype == 'dml':
+		if sqltype != 'qry':
+			r = await self.execute(sql, ns)
 			return r
-
+		if 'page' in ns.keys():
+			cnt = await self.record_count(sql, ns)
+			rows = await self.pagingdata(sql, ns)
+			return {
+				'total': cnt,
+				'rows': rows
+			}
+		ret = []
+		async for r in self._get_data(sql, ns):
+			ret.append(r)
 		return ret
 
 	async def sqlPaging(self,sql,ns):
