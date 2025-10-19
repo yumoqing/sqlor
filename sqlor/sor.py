@@ -452,7 +452,7 @@ class SQLor(object):
 	async def tables(self):
 		sqlstring = self.tablesSQL()
 		ret = []
-		async with r in self._get_data(sqlstring,{}):
+		async for r in self._get_data(sqlstring,{}):
 			ret.append(r)
 		return ret
 	
