@@ -324,6 +324,7 @@ class SQLor(object):
 		fields = [i[0].lower() for i in cur.description]
 		while True:
 			rec = await self.fetchone(cur)
+			debug(f'{rec=}, {tpye(rec)}')
 			if rec is None:
 				break
 			if isinstance(rec, dict):
