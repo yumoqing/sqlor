@@ -47,7 +47,7 @@ class SqlorPool:
 	
 	async def _new_sqlor(self):
 		sqlor = await self.create_func()
-		sqlor.connect()
+		await sqlor.connect()
 		x = DictObject(**{
 			'used': True,
 			'use_at': time.time(),
