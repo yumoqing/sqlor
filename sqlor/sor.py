@@ -311,20 +311,9 @@ class SQLor(object):
 		sqltype = self.getSqlType(sql)
 		cur = self.cursor()
 		ret = await self.runVarSQL(cur,sql,value)
-		if sqltype == 'qry' and callback is not None:
-			fields = [ i[0].lower() for i in cur.description ]
-			while True:
-				rec = await self.fetchone(cur)
-				if rec is None:
-					break
-				dic = {}
-				for i in range(len(fields)):
-					dic.update({fields[i] : db_type_2_py_type(rec[i])})
-				dic = DictObject(**dic)
-				yield dic
 		if sqltype == 'dml':
 			self.dataChanged = True
-			return ret
+		return ret
 
 	async def _get_data(self, sql, ns):
 		sqltype = self.getSqlType(sql)
