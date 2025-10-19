@@ -320,11 +320,14 @@ class SQLor(object):
 		if sqltype != 'qry':
 			raise Exception('not select sql')
 		ret = self.execute(sql, ns)
+		cur = self.cursor()
 		fields = [i[0].lower() for i in cur.description]
 		while True:
 			rec = await self.fetchone(cur)
 			if rec is None:
 				break
+			if isinstance(rec, dict):
+				rec = rec.values()
 			dic = {}
 			for i in range(len(fields)):
 				v = db_type_2_py_type(rec[i])
