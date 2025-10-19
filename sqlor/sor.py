@@ -316,11 +316,11 @@ class SQLor(object):
 		return ret
 
 	async def _get_data(self, sql, ns):
+		cur = self.cursor()
 		sqltype = self.getSqlType(sql)
 		if sqltype != 'qry':
 			raise Exception('not select sql')
-		ret = self.execute(sql, ns)
-		cur = self.cursor()
+		ret = await self.execute(sql, ns)
 		fields = [i[0].lower() for i in cur.description]
 		while True:
 			rec = await self.fetchone(cur)
