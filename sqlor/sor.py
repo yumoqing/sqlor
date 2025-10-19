@@ -470,7 +470,7 @@ class SQLor(object):
 		async for r in self._get_data(sqlstring,{}):
 			r.name = r.name.lower()
 			ret.append(r)
-		debug(f'{ret=}')
+		debug(f'{sqlstring=}, {ret=}')
 		return ret
 	
 	def indexesSQL(self,tablename):
