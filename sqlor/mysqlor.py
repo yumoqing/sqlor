@@ -153,7 +153,7 @@ WHERE
 		dbdesc = self.dbdesc
 		self.conn = await aiomysql.connect(**dbdesc)
 		self.cur = await self.conn.cursor()
-		aelf.dbname = dbdesc.get('db')
+		self.dbname = dbdesc.get('db')
 
 	async def close(self):
 		await self.cursor.close()
