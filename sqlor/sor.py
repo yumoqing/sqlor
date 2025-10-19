@@ -172,7 +172,7 @@ class SQLor(object):
 		return self.cur
 	
 	def recordCnt(self,sql):
-		ret = u"""select count(*) rcnt from (%s) rowcount_table""" % sql
+		ret = """select count(*) rcnt from (%s) rowcount_table""" % sql
 		return ret
 	
 	def sortSQL(self, sql, NS):
@@ -307,9 +307,13 @@ class SQLor(object):
 		
 	async def fetchone(self, cur):
 		if inspect.iscoroutinefunction(cur.fetchone):
-			return await cur.fetchone()
+			ret = await cur.fetchone()
+			debug(f'coro:sor.fetchone()={ret}, {type(ret)}')
+			return ret
 		f = awaitify(cur.fetchone)
-		return await f()
+		ret = await f()
+		debug(f'func:sor.fetchone()={ret}, {type(ret)}')
+		return ret
 
 	async def execute(self, sql, value):
 		sqltype = self.getSqlType(sql)
