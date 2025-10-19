@@ -239,11 +239,11 @@ class SQLor(object):
 	async def cur_execute(self, cur, sql, ns):
 		if inspect.iscoroutinefunction(cur.execute):
 			ret = await cur.execute(sql, ns)
-			debug(f'-------coroutine--{ret}-{cur}----')
+			# debug(f'-------coroutine--{ret}-{cur}----')
 			return ret
 		f = awaitify(cur.execute)
 		ret = await f(sql, ns)
-		debug(f'------function--{ret}------')
+		# debug(f'------function--{ret}------')
 		return ret
 
 	async def runVarSQL(self, cursor, sql, NS):
@@ -309,10 +309,10 @@ class SQLor(object):
 	async def fetchone(self, cur):
 		if inspect.iscoroutinefunction(cur.fetchone):
 			ret = await cur.fetchone()
-			debug(f'coro:sor.fetchone()={ret}, {type(ret)}')
+			# debug(f'coro:sor.fetchone()={ret}, {type(ret)}')
 			return ret
 		ret = await cur.fetchone()
-		debug(f'func:sor.fetchone()={ret}, {type(ret)}')
+		# debug(f'func:sor.fetchone()={ret}, {type(ret)}')
 		if isinstance(ret, asyncio.Future):
 			ret = ret.result()
 		return ret
@@ -334,7 +334,8 @@ class SQLor(object):
 		fields = [i[0].lower() for i in cur.description]
 		while True:
 			rec = await self.fetchone(cur)
-			debug(f'{rec=}, {type(rec)}')
+			if rec is None:
+				break
 			if rec is None:
 				break
 			if isinstance(rec, dict):
