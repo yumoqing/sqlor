@@ -505,11 +505,11 @@ class SQLor(object):
 		return ret
 	
 	async def primary(self,tablename):
-		sqlstring = self.pkSQL(tablename)
+		sql = self.pkSQL(tablename)
 		recs = []
-		async for r in self._get_data(sqlstring,{}):
-			recs.append(recs)
-		debug(f'primary("{tablename}")={recs}')
+		async for r in self._get_data(sql, {}):
+			recs.append(r)
+		debug(f'primary("{tablename}")={recs}, {sql}')
 		return recs
 		
 	async def fkeys(self,tablename):
