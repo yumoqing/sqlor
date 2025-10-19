@@ -64,7 +64,7 @@ class SqlorPool:
 				if not s.used:
 					yielded_sqlor = s
 			if not yielded_sqlor:
-				yielded_sqlor = self._new_sqlor()
+				yielded_sqlor = await self._new_sqlor()
 			yielded_sqlor.used = True
 			yielded_sqlor.use_at = time.time()
 			yield yielded_sqlor.sqlor
@@ -104,6 +104,7 @@ class DBPools:
 			pool = SqlorPool(f)
 			self._pools[name] = pool
 		self.e_except = None
+		sqlor = None
 		try:
 			async with pool.context() as sqlor:
 				yield sqlor
