@@ -237,11 +237,13 @@ class SQLor(object):
 
 	async def cur_execute(self, cur, sql, ns):
 		if inspect.iscoroutinefunction(cur.execute):
-			debug('-------coroutine-------')
-			return await cur.execute(sql, ns)
+			ret = await cur.execute(sql, ns)
+			debug(f'-------coroutine--{ret}-{cur}----')
+			return ret
 		f = awaitify(cur.execute)
-		debug('------function--------')
-		return await f(sql, ns)
+		ret = await f(sql, ns)
+		debug(f'------function--{ret}------')
+		return ret
 
 	async def runVarSQL(self, cursor, sql, NS):
 		"""
