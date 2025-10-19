@@ -76,7 +76,7 @@ class MySqlor(SQLor):
 limit $[from_line]$,$[rows]$"""
 
 	def tablesSQL(self):
-		sqlcmd = """SELECT lower(TABLE_NAME) as name, lower(TABLE_COMMENT) as title FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s'""" % self.dbdesc.get('dbname','unknown')
+		sqlcmd = """SELECT lower(TABLE_NAME) as name, lower(TABLE_COMMENT) as title FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s'""" % self.dbname
 		return sqlcmd
 	
 	def fieldsSQL(self,tablename=None):
@@ -91,7 +91,7 @@ limit $[from_line]$,$[rows]$"""
 	lower(is_nullable) as nullable,
 	column_comment as title,
 	lower(table_name) as table_name
- from information_schema.columns where lower(TABLE_SCHEMA) = '%s' """ % self.dbdesc.get('dbname','unknown').lower()
+ from information_schema.columns where lower(TABLE_SCHEMA) = '%s' """ % self.dbname
 		if tablename is not None:
 			sqlcmd = sqlcmd + """and lower(table_name)='%s';""" % tablename.lower()
 		return sqlcmd
@@ -115,7 +115,7 @@ limit $[from_line]$,$[rows]$"""
        AND R.REFERENCED_TABLE_NAME = C.REFERENCED_TABLE_NAME
       WHERE C.REFERENCED_TABLE_NAME IS NOT NULL ;
 		and C.TABLE_SCHEMA = '%s'
-""" % self.dbdesc.get('dbname','unknown').lower()
+""" % self.dbname
 		if tablename is not None:
 			sqlcmd = sqlcmd + " and C.REFERENCED_TABLE_NAME = '%s'" % tablename.lower()
 		return sqlcmd
@@ -136,7 +136,7 @@ limit $[from_line]$,$[rows]$"""
 FROM
     information_schema.statistics
 WHERE
-    table_schema = '%s'""" % self.dbdesc.get('dbname','unknown')
+    table_schema = '%s'""" % self.dbname
 		if tablename is not None:
 			sqlcmd = sqlcmd + """	AND table_name = '%s'""" % tablename.lower()
 		return sqlcmd
