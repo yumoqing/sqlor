@@ -310,8 +310,8 @@ class SQLor(object):
 			ret = await cur.fetchone()
 			debug(f'coro:sor.fetchone()={ret}, {type(ret)}')
 			return ret
-		f = awaitify(cur.fetchone)
-		ret = await f()
+		# f = awaitify(cur.fetchone)
+		ret = cur.fetchone()
 		debug(f'func:sor.fetchone()={ret}, {type(ret)}')
 		return ret
 
