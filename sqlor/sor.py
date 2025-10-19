@@ -468,7 +468,9 @@ class SQLor(object):
 		sqlstring = self.tablesSQL()
 		ret = []
 		async for r in self._get_data(sqlstring,{}):
+			r.name = r.name.lower()
 			ret.append(r)
+		debug(f'{ret=}')
 		return ret
 	
 	def indexesSQL(self,tablename):
@@ -526,11 +528,18 @@ class SQLor(object):
 		return await self.execute(sql, {})
 		
 	async def getTableDesc(self,tablename):
+		tablename = tablename.lower()
 		desc = self.getMeta(tablename)
 		if desc:
 			return desc
 		desc = {}
-		summary = [ i for i in await self.tables() if tablename.lower() == i['name'].lower() ]
+		tables = await self.tables()
+		debug(f'{tables=}')
+		summary = [i for i in tables if tablename == i.name]
+		if not summary:
+			e = Exception(f'table({tablename}) not exist')
+			exception(f'{e}{format_exc()}')
+			raise e
 		pris = await self.primary(tablename)
 		primary = [i['name'] for i in pris ]
 		summary[0]['primary'] = primary
