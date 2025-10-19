@@ -477,7 +477,6 @@ class SQLor(object):
 		async for r in self._get_data(sqlstring,{}):
 			r.name = r.name.lower()
 			ret.append(r)
-		debug(f'{sqlstring=}, {ret=}')
 		return ret
 	
 	def indexesSQL(self,tablename):
@@ -541,7 +540,6 @@ class SQLor(object):
 			return desc
 		desc = {}
 		tables = await self.tables()
-		debug(f'{tables=}')
 		summary = [i for i in tables if tablename == i.name]
 		if not summary:
 			e = Exception(f'table({tablename}) not exist')

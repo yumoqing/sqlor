@@ -180,9 +180,10 @@ order by
 			port:
 		"""
 		kwargs = self.dbdesc
-		self.conn = await self.connect(**kwargs)
+		dns = ' '.join([f'{k}={v}' for k, v in kwargs.items()])
+		self.conn = await self.connect(dns)
 		self.cur = await self.conn.cursor()
-		self.dbname = kwargs['dbname']
+		self.dbname = kwargs.dbname.lower()
 	
 	async def close():
 		await self.cur.close()
