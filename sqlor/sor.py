@@ -489,7 +489,7 @@ class SQLor(object):
 		if sqlstring is None:
 			return []
 		recs = []
-		async for r in self.execute(sqlstring, {}):
+		async for r in self._get_data(sqlstring, {}):
 			recs.append(r)
 		return recs
 		
