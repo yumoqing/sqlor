@@ -487,13 +487,16 @@ class SQLor(object):
 		if sqlstring is None:
 			return []
 		recs = []
-		await self.execute(sqlstring,{},lambda x:recs.append(x))
+		async for r in self.execute(sqlstring, {}):
+			recs.append(r)
 		return recs
 		
 	async def fields(self,tablename=None):
-		sqlstring = self.fieldsSQL(tablename)
+		sql = self.fieldsSQL(tablename)
 		recs = []
-		await self.execute(sqlstring,{},lambda x:recs.append(x))
+		async for r in self.execute(sql, {}):
+			recs.append(r)
+
 		ret = []
 		for r in recs:
 			r.update({'type':self.db2modelTypeMapping.get(r['type'].lower(),'unknown')})
@@ -504,14 +507,15 @@ class SQLor(object):
 	async def primary(self,tablename):
 		sqlstring = self.pkSQL(tablename)
 		recs = []
-		await self.execute(sqlstring,{},lambda x:recs.append(x))
-		# print('sql=', sqlstring, 'recs=', recs)
+		async for r in self._get_data(sqlstring,{}):
+			recs.append(recs)
 		return recs
 		
 	async def fkeys(self,tablename):
 		sqlstring = self.fkSQL(tablename)
 		recs = []
-		await self.execute(sqlstring,{},lambda x:recs.append(x))
+		async for r in self._get_data(sqlstring, {}):
+			recs.append(r)
 		return recs
 	
 	async def createTable(self,tabledesc):
@@ -551,14 +555,14 @@ class SQLor(object):
 		return desc
 	
 	async def rollback(self):
-		if self.async_mode:
+		if inspect.iscoroutinefunction(self.conn.rollback):
 			await self.conn.rollback()
 		else:
 			self.conn.rollback()
 		self.dataChanged = False
 
 	async def commit(self):
-		if self.async_mode:
+		if inspect.iscoroutinefunction(self.conn.commit):
 			await self.conn.commit()
 		else:
 			self.conn.commit()
