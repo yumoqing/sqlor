@@ -237,11 +237,13 @@ class SQLor(object):
 
 	async def cur_execute(self, cur, sql, ns):
 		if inspect.iscoroutinefunction(cur.execute):
+			debug('-------coroutine-------')
 			return await cur.execute(sql, ns)
 		f = awaitify(cur.execute)
+		debug('------function--------')
 		return await f(sql, ns)
 
-	async def runVarSQL(self,cursor,sql,NS):
+	async def runVarSQL(self, cursor, sql, NS):
 		"""
 		using a opened cursor to run a SQL statment with variable, the variable is setup in NS namespace
 		return a cursor with data
@@ -250,7 +252,7 @@ class SQLor(object):
 		datas = self.dataConvert(datas)
 		try:
 			return await self.cur_execute(cursor, 
-									sql, 
+									markedSQL, 
 									datas)
 
 		except Exception as e:
@@ -310,7 +312,7 @@ class SQLor(object):
 	async def execute(self, sql, value):
 		sqltype = self.getSqlType(sql)
 		cur = self.cursor()
-		ret = await self.runVarSQL(cur,sql,value)
+		ret = await self.runVarSQL(cur, sql, value)
 		if sqltype == 'dml':
 			self.dataChanged = True
 		return ret
