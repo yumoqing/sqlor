@@ -496,7 +496,7 @@ class SQLor(object):
 	async def fields(self,tablename=None):
 		sql = self.fieldsSQL(tablename)
 		recs = []
-		async for r in self.execute(sql, {}):
+		async for r in self._get_data(sql, {}):
 			recs.append(r)
 
 		ret = []
