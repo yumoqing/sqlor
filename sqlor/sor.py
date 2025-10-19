@@ -439,9 +439,6 @@ class SQLor(object):
 		ret = [ {'name':i[0],'type':i[1]} for i in self.cur.description ]
 		return ret
 		
-	async def sqlExecute(self,desc,NS):
-		return await self.execute(desc,NS,None)
-	
 	async def sqlExe(self, sql, ns):
 		sqltype = self.getSqlType(sql)
 		if sqltype != 'qry':
