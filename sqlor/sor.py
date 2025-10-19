@@ -644,5 +644,5 @@ class SQLor(object):
 	async def connect(self):
 		raise Exception('Not Implemented')
 
-	async def close(self)
+	async def close(self):
 		raise Exception('Not Implemented')
