@@ -93,6 +93,7 @@ class SQLor(object):
 		if self.dbdesc.password:
 			key=getConfig().password_key
 			self.dbdesc.password = aes_decode_b64(key, self.dbdesc.password)
+			debug(f'--------{self.dbdesc=}----')
 
 	async def get_schema(self):
 		def concat_idx_info(idxs):
