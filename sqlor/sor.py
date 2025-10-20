@@ -515,7 +515,7 @@ class SQLor(object):
 		recs = []
 		async for r in self._get_data(sql, {}):
 			recs.append(r)
-		debug(f'primary("{tablename}")={recs}, {sql}')
+		# debug(f'primary("{tablename}")={recs}, {sql}')
 		return recs
 		
 	async def fkeys(self,tablename):
