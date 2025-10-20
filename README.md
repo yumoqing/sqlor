@@ -28,7 +28,7 @@ SQLOR is a database api for python3, it is base on the python's DBAPI2
 ```
 import asyncio
 
-from sqlor.dbpools  import DBPools
+from sqlor.dbpools  import DBPools, sqlorContext
 
 dbs={
         "aiocfae":{
@@ -72,8 +72,7 @@ loop = asyncio.get_event_loop()
 pool = DBPools(dbs,loop=loop)
 
 async def testfunc():
-        db = DBPools()
-		async with db.sqlorContext('stock') as sor:	
+		async with sqlorContext('stock') as sor:	
 			# start a transaction
 			# if exception happended, all change to database will rollback
 			# else will commit

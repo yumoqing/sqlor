@@ -80,7 +80,7 @@ class SQLor(object):
 		self.sqlts = sqlts
 		self.sqlvp = sqlvp
 		self.sqlvs = sqlvs
-		self.dbdesc = dbdesc
+		self.dbdesc = dbdesc.copy()
 		self.unpassword()
 		self.dbname = None
 		self.writer = None
