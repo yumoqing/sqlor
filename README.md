@@ -14,14 +14,72 @@ SQLOR is a database api for python3, it is base on the python's DBAPI2
 
 ## requirements
 
-* python 3.5 or above
+* python 3.9 or above
 * asyncio
 * Oracle DBAPI2 driver(cx_Oracle)
-* MySQL DBAPI2 driver(mysql-connector)
-* Postgresql DBAPI2 driver(psycopg2-binrary)
+* Postgresql DBAPI2 driver(aiopg)
 * Asynchronous MySQL driver(aiomysql)
 * Asynchronous Postgresql driver(aiopg)
+* clickhouse(clickhouse-connect)
 * Other driver can be easy integreated
+
+## Support Database Types
+* oracle
+* mysql, mariadb
+* TiDB
+* clickHouse
+* DuckDB
+* PostgreSQL
+* MsSQL
+
+## Database Description json format
+password in json data is encrypted by aes.
+
+* mysql, tidb, mariadb
+```
+{
+	"databases":{
+		"mydb":{
+			"driver":"mysql",
+			"kwargs":{
+				"user":"test",
+				"db":"cfae",
+				"password":"test123",
+				"host":"localhost"
+			}
+		}
+	}
+}
+```
+* PostgreSQL
+```
+{
+    "databases":{
+        "mydb":{
+            "driver":"postgresql",
+            "kwargs":{
+                "user":"test",
+                "dbname":"cfae",
+                "password":"test123",
+                "host":"localhost"
+            }
+        }
+    }
+}
+```
+* duckdb
+```
+{
+    "databases":{
+        "mydb":{
+            "driver":"duckdb",
+            "kwargs":{
+                "dbfile":"ttt.ddb"
+            }
+        }
+    }
+}
+```
 
 ## Using
 
@@ -31,11 +89,8 @@ import asyncio
 from sqlor.dbpools  import DBPools, sqlorContext
 
 dbs={
-        "aiocfae":{
-                "driver":"aiomysql",
-                "async_mode":True,
-                "coding":"utf8",
-                "dbname":"cfae",
+        "mydb":{
+                "driver":"mysql",
                 "kwargs":{
                         "user":"test",
                         "db":"cfae",

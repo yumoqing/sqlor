@@ -21,7 +21,6 @@ from .oracleor import Oracleor
 from .sqlite3or import SQLite3or
 from .aiosqliteor import Aiosqliteor
 from .mysqlor import MySqlor
-from .aiomysqlor import AioMysqlor
 from .aiopostgresqlor import AioPostgresqlor
 
 def sqlorFactory(dbdesc):

@@ -1,4 +1,5 @@
 # -*- coding:utf8 -*-
+import duckdb
 from appPublic.argsConvert import ArgsConvert, ConditionConvert
 from .sor import SQLor
 from .const import ROWS
@@ -116,4 +117,16 @@ class DuckDBor(SQLor):
 		if tablename is not None:
 			sqlcmd += f" AND lower(table_name) = '{tablename.lower()}'"
 		return sqlcmd
+
+	async def connect(self):
+		self.conn = duckdb.connect(self.dbdesc.dbfile)
+		self.cur = self.conn
+		self.dbname = None
+	
+	async def close(self):
+		self.conn.close()
+	
+	def unpassword(self):
+		pass
+
 

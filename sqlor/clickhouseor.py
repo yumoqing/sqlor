@@ -1,4 +1,6 @@
 # -*- coding:utf8 -*-
+# pip install clickhouse-driver
+from clickhouse_driver import Client
 from appPublic.argsConvert import ArgsConvert, ConditionConvert
 from .sor import SQLor
 from .ddl_template_clickhouse import clickhouse_ddl_tmpl
@@ -95,3 +97,10 @@ WHERE database = '%s' AND table = '%s' AND is_in_primary_key = 1;
         # ClickHouse 不支持外键
         return "SELECT 'ClickHouse does not support foreign keys' AS msg;"
 
+	async def connect(self):
+		self.conn = Client(**self.dbdesc)
+		self.cur = self.conn
+	
+	async def close(self):
+		self.conn.close()
+	
