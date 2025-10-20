@@ -82,6 +82,7 @@ class SQLor(object):
 		self.sqlvs = sqlvs
 		self.dbdesc = dbdesc.copy()
 		self.unpassword()
+		debug(f'--------{self.dbdesc=}----')
 		self.dbname = None
 		self.writer = None
 		self.convfuncs = {}
@@ -93,7 +94,6 @@ class SQLor(object):
 		if self.dbdesc.password:
 			key=getConfig().password_key
 			self.dbdesc.password = aes_decode_b64(key, self.dbdesc.password)
-			debug(f'--------{self.dbdesc=}----')
 
 	async def get_schema(self):
 		def concat_idx_info(idxs):
