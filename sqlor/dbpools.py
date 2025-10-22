@@ -6,6 +6,7 @@ import codecs
 
 from contextlib import asynccontextmanager
 
+from appPublic.worker import get_event_loop
 from appPublic.myImport import myImport
 from appPublic.dictObject import DictObject
 from appPublic.Singleton import SingletonDecorator
@@ -73,7 +74,7 @@ class SqlorPool:
 class DBPools:
 	def __init__(self,databases={},max_connect=100,loop=None):
 		if loop is None:
-			loop = asyncio.get_event_loop()
+			loop = get_event_loop()
 		self.loop = loop
 		self.max_connect = max_connect
 		self._pools = {}
