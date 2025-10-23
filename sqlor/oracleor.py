@@ -66,8 +66,8 @@ from (
 	) 
 where row_id >=$[from_line]$ and row_id < $[end_line]$"""
 
-    def test_sqlstr(self):
-        return "select 1 from dual"
+	def test_sqlstr(self):
+		return "select 1 from dual"
 
 	def tablesSQL(self):
 		sqlcmd = """select 
