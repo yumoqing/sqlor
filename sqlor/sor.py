@@ -95,6 +95,9 @@ class SQLor(object):
 			key=getConfig().password_key
 			self.dbdesc.password = aes_decode_b64(key, self.dbdesc.password)
 
+	def test_sqlstr(self):
+		return "select 1"
+
 	async def get_schema(self):
 		def concat_idx_info(idxs):
 			x = []

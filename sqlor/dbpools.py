@@ -56,13 +56,24 @@ class SqlorPool:
 		self.sqlors.append(x)
 		return x
 
+	async def test_sqlor(self, sor):
+		try:
+			await sor.execute(sor.test_sqlstr, {})
+			return True
+		except:
+			return False
+
 	@asynccontextmanager
 	async def context(self):
 		async with self.sema:
+			sqlors = [s for s in self.sqlors]
 			yielded_sqlor = None
-			for s in self.sqlors:
+			for s in sqlors:
 				if not s.used:
-					yielded_sqlor = s
+					if self.test_sqlor(s):
+						yielded_sqlor = s
+					else:
+						self.sqlors = [ x for x in self.sqlors if x != s ]
 			if not yielded_sqlor:
 				yielded_sqlor = await self._new_sqlor()
 			yielded_sqlor.used = True
