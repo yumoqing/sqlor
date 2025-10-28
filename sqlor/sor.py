@@ -90,6 +90,12 @@ class SQLor(object):
 		self.dataChanged = False
 		self.metadatas={}
 
+	async def enter(self):
+		pass
+	
+	async def exit(self):
+		pass
+
 	def unpassword(self):
 		if self.dbdesc.password:
 			key=getConfig().password_key

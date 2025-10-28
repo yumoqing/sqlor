@@ -70,7 +70,8 @@ class SqlorPool:
 			yielded_sqlor = None
 			for s in sqlors:
 				if not s.used:
-					if self.test_sqlor(s):
+					flg = self.test_sqlor(s):
+					if flg:
 						yielded_sqlor = s
 					else:
 						self.sqlors = [ x for x in self.sqlors if x != s ]
@@ -118,7 +119,9 @@ class DBPools:
 		sqlor = None
 		try:
 			async with pool.context() as sqlor:
+				sqlor.enter()
 				yield sqlor
+				sqlor.exit()
 			if sqlor and sqlor.dataChanged:
 				await sqlor.commit()
 		except Exception as e:
