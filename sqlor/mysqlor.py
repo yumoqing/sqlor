@@ -164,7 +164,7 @@ WHERE
 	async def exit(self):
 		try:
 			await self.cur.fetchall()
-			self.cur.close()
+			await self.cur.close()
 		except:
 			pass
 		self.cur = None

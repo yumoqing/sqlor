@@ -56,11 +56,24 @@ class SqlorPool:
 		self.sqlors.append(x)
 		return x
 
+	async def _del_sqlor(self, sor):
+		try:
+			await sor.exit()
+		except:
+			pass
+		try:
+			await sor.close()
+		except:
+			pass
+
 	async def test_sqlor(self, sor):
 		try:
+			await sor.enter()
 			await sor.execute(sor.test_sqlstr, {})
+			await sor.exit()
 			return True
 		except:
+			await sor.exit()
 			return False
 
 	@asynccontextmanager
@@ -70,10 +83,11 @@ class SqlorPool:
 			yielded_sqlor = None
 			for s in sqlors:
 				if not s.used:
-					flg = await self.test_sqlor(s)
+					flg = await self.test_sqlor(s.sqlor)
 					if flg:
 						yielded_sqlor = s
 					else:
+						await self._del_sqlor(s.sqlor)
 						self.sqlors = [ x for x in self.sqlors if x != s ]
 			if not yielded_sqlor:
 				yielded_sqlor = await self._new_sqlor()
@@ -81,6 +95,7 @@ class SqlorPool:
 			yielded_sqlor.use_at = time.time()
 			yield yielded_sqlor.sqlor
 			yielded_sqlor.used = False
+			
 
 @SingletonDecorator
 class DBPools:
@@ -119,9 +134,9 @@ class DBPools:
 		sqlor = None
 		try:
 			async with pool.context() as sqlor:
-				sqlor.enter()
+				await sqlor.enter()
 				yield sqlor
-				sqlor.exit()
+				await sqlor.exit()
 			if sqlor and sqlor.dataChanged:
 				await sqlor.commit()
 		except Exception as e:
