@@ -70,7 +70,7 @@ class SqlorPool:
 			yielded_sqlor = None
 			for s in sqlors:
 				if not s.used:
-					flg = self.test_sqlor(s):
+					flg = await self.test_sqlor(s)
 					if flg:
 						yielded_sqlor = s
 					else:
