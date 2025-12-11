@@ -18,7 +18,7 @@ datetime
 {%- elif type=='timestamp' -%}
 TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 {%- elif type=='text' -%}
-longtext
+longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 {%- elif type=='bin' -%}
 longblob
 {%- else -%}
@@ -38,6 +38,8 @@ NOT NULL
 {% macro primary() %}
 ,primary key({{','.join(summary[0].primary)}})
 {% endmacro %}
+-- 建库时请用以下语句，支持emoji字符
+-- CREATE DATABASE mydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 drop table if exists {{summary[0].name}};
 CREATE TABLE {{summary[0].name}}
 (
@@ -48,8 +50,9 @@ CREATE TABLE {{summary[0].name}}
 {{primary()}}
 {% endif %}
 )
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci
 engine=innodb 
-default charset=utf8 
 {% if summary[0].title %}comment '{{summary[0].title}}'{% endif %}
 ;
 {% for v in indexes %}
