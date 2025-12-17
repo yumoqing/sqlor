@@ -306,8 +306,10 @@ class SQLor(object):
 		dml change the database data
 		qry query data
 		"""
-		
 		a = sql.lstrip(' \t\n\r')
+		a = ''.join(a.split('\r'))
+		a = ' '.join(a.split('\n'))
+		a = ' '.join(a.split('\t'))
 		a = a.lower()
 		al = a.split(' ')
 		if al[0] == 'select':
