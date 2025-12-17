@@ -82,7 +82,6 @@ class SQLor(object):
 		self.sqlvs = sqlvs
 		self.dbdesc = dbdesc.copy()
 		self.unpassword()
-		debug(f'--------{self.dbdesc=}----')
 		self.dbname = None
 		self.writer = None
 		self.convfuncs = {}
