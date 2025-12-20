@@ -149,3 +149,13 @@ class DBPools:
 	def get_exception(self):
 		return self.e_except
 
+async def get_sor_context(env, modulename, errorback=None):
+	db = DBPools()
+	dbname = env.get_module_dbname(modulename)
+	async with db.sqlorContext(dbname) as sor:
+		yield sor
+	if db.e_except:
+		if errorback:
+			await errorback(db.except)
+		else:
+			raise db.e_except
