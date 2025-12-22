@@ -143,8 +143,10 @@ class DBPools:
 			self.e_except = e
 			cb = format_exc()
 			exception(f'sqlorContext():EXCEPTION{e}, {cb}')
-			if sqlor and sqlor.dataChanged:
+			try:
 				await sqlor.rollback()
+			except:
+				pass
 	
 	def get_exception(self):
 		return self.e_except
