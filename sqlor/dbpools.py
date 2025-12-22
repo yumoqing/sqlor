@@ -156,6 +156,6 @@ async def get_sor_context(env, modulename, errorback=None):
 		yield sor
 	if db.e_except:
 		if errorback:
-			await errorback(db.except)
+			await errorback(db.e_except)
 		else:
 			raise db.e_except
