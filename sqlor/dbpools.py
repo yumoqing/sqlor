@@ -149,6 +149,7 @@ class DBPools:
 	def get_exception(self):
 		return self.e_except
 
+@asynccontextmanager
 async def get_sor_context(env, modulename, errorback=None):
 	db = DBPools()
 	dbname = env.get_module_dbname(modulename)
