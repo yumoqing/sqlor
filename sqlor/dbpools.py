@@ -93,8 +93,13 @@ class SqlorPool:
 				yielded_sqlor = await self._new_sqlor()
 			yielded_sqlor.used = True
 			yielded_sqlor.use_at = time.time()
-			yield yielded_sqlor.sqlor
-			yielded_sqlor.used = False
+			try:
+				yield yielded_sqlor.sqlor
+				yielded_sqlor.used = False
+				return
+			except Exception as e:
+				yielded_sqlor.used = False
+				raise e
 			
 
 @SingletonDecorator
@@ -147,6 +152,7 @@ class DBPools:
 				await sqlor.rollback()
 			except:
 				pass
+			await sqlor.exit()
 	
 	def get_exception(self):
 		return self.e_except
