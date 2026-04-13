@@ -153,6 +153,7 @@ class DBPools:
 			except:
 				pass
 			await sqlor.exit()
+			raise e
 	
 	def get_exception(self):
 		return self.e_except
