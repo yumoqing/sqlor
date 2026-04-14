@@ -170,7 +170,7 @@ order by
     i.relname""" % tablename.lower()
 		return sqlcmd
 		
-	async def connect():
+	async def connect(self):
 		"""
 		kwargs:
 			dbname:
@@ -179,13 +179,22 @@ order by
 			host:
 			port:
 		"""
-		kwargs = self.dbdesc
-		dns = ' '.join([f'{k}={v}' for k, v in kwargs.items()])
-		self.conn = await self.connect(dns)
-		self.cur = await self.conn.cursor()
-		self.dbname = kwargs.dbname.lower()
-	
-	async def close():
+		dbdesc = self.dbdesc
+		self.conn = await aiopg.connect(**dbdesc)
+		self.dbname = dbdesc.get('dbname', '').lower()
+
+	async def close(self):
 		await self.cur.close()
 		await self.conn.close()
+
+	async def enter(self):
+		self.cur = await self.conn.cursor()
+
+	async def exit(self):
+		try:
+			await self.cur.fetchall()
+			await self.cur.close()
+		except:
+			pass
+		self.cur = None
 

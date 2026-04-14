@@ -4,6 +4,17 @@ from .sor import SQLor
 from .const import ROWS
 from .ddl_template_mysql import mysql_ddl_tmpl  # ✅ 直接复用 MySQL 模板
 
+select_stmt = """
+select 
+	$[fields]$ 
+from 
+	$[tables]$ 
+$[whereclause]$
+$[groupbyclause]$
+$[havingclause]$
+$[orderbyclause]$
+"""
+
 class TiDBor(SQLor):
 	ddl_template = mysql_ddl_tmpl
 
@@ -50,7 +61,7 @@ class TiDBor(SQLor):
 
 	def grammar(self):
 		return {
-			'select': 'select * from {table} where {condition}',
+			'select': select_stmt,
 		}
 
 	def placeHolder(self, varname, pos=None):
@@ -71,14 +82,14 @@ class TiDBor(SQLor):
 
 	def tablesSQL(self):
 		# ✅ TiDB 支持 INFORMATION_SCHEMA.TABLES
-		dbname = self.dbdesc.get('dbname', 'unknown')
+		dbname = self.dbdesc.get('db', 'unknown')  # MySQL uses 'db', not 'dbname'
 		sqlcmd = f"""SELECT lower(TABLE_NAME) AS name, TABLE_COMMENT AS title
-					 FROM INFORMATION_SCHEMA.TABLES
-					 WHERE TABLE_SCHEMA = '{dbname}'"""
+					FROM INFORMATION_SCHEMA.TABLES
+					WHERE TABLE_SCHEMA = '{dbname}'"""
 		return sqlcmd
 
 	def fieldsSQL(self, tablename=None):
-		dbname = self.dbdesc.get('dbname', 'unknown').lower()
+		dbname = self.dbdesc.get('db', 'unknown').lower()  # MySQL uses 'db'
 		sqlcmd = f"""
 SELECT 
 	lower(column_name) AS name,
@@ -98,7 +109,7 @@ WHERE lower(TABLE_SCHEMA) = '{dbname}'
 
 	def fkSQL(self, tablename=None):
 		# ✅ TiDB 兼容 MySQL 的 FK 元信息
-		dbname = self.dbdesc.get('dbname', 'unknown').lower()
+		dbname = self.dbdesc.get('db', 'unknown').lower()
 		sqlcmd = f"""
 SELECT 
 	C.TABLE_SCHEMA AS owner,
@@ -121,7 +132,7 @@ FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
 WHERE table_name='{tablename.lower()}' AND constraint_name='PRIMARY'"""
 
 	def indexesSQL(self, tablename=None):
-		dbname = self.dbdesc.get('dbname', 'unknown')
+		dbname = self.dbdesc.get('db', 'unknown')
 		sqlcmd = f"""SELECT DISTINCT
 	lower(index_name) AS index_name,
 	CASE NON_UNIQUE WHEN 0 THEN 'unique' ELSE '' END AS is_unique,
@@ -132,3 +143,28 @@ WHERE table_schema = '{dbname}'"""
 			sqlcmd += f" AND table_name = '{tablename.lower()}'"
 		return sqlcmd
 
+	async def connect(self):
+		"""
+		TiDB 兼容 MySQL 协议，使用 aiomysql
+		"""
+		import aiomysql
+		
+		dbdesc = self.dbdesc
+		# TiDB 使用与 MySQL 相同的连接参数
+		self.conn = await aiomysql.connect(**dbdesc)
+		self.dbname = dbdesc.get('db', '')
+
+	async def close(self):
+		await self.cur.close()
+		await self.conn.close()
+
+	async def enter(self):
+		self.cur = await self.conn.cursor()
+
+	async def exit(self):
+		try:
+			await self.cur.fetchall()
+			await self.cur.close()
+		except:
+			pass
+		self.cur = None

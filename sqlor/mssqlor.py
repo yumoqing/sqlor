@@ -2,6 +2,17 @@
 from .sor import SQLor
 from .ddl_template_sqlserver import sqlserver_ddl_tmpl
 
+select_stmt = """
+select 
+	$[fields]$ 
+from 
+	$[tables]$ 
+$[whereclause]$
+$[groupbyclause]$
+$[havingclause]$
+$[orderbyclause]$
+"""
+
 class MsSqlor(SQLor):
 	ddl_template = sqlserver_ddl_tmpl
 	db2modelTypeMapping = {
@@ -45,7 +56,7 @@ class MsSqlor(SQLor):
 	@classmethod
 	def isMe(self,name):
 		return name=='pymssql'
-			
+		
 	def grammar(self):
 		return {
 			'select':select_stmt,
@@ -55,7 +66,7 @@ class MsSqlor(SQLor):
 		if varname=='__mainsql__' :
 			return ''
 		return '%s'
-	
+
 	def dataConvert(self,dataList):
 		if type(dataList) == type({}):
 			d = [ i for i in dataList.values()]
@@ -86,9 +97,9 @@ where _row_id >= $[from_line]$ and _row_id < $[end_line]$"""
 		   ,length = Columnproperty(a.id,a.name,'PRECISION')
 		   ,dec = Isnull(Columnproperty(a.id,a.name,'Scale'),null)
 		   ,nullable = CASE 
-					WHEN a.isnullable = 1 THEN 'yes'
-					ELSE 'no'
-				  END
+						WHEN a.isnullable = 1 THEN 'yes'
+						ELSE 'no'
+					  END
 		   ,title = lower(cast(Isnull(g.[value],a.name) as nvarchar) )
 		   ,table_name = lower(d.name)
 	FROM     syscolumns a
@@ -98,7 +109,7 @@ where _row_id >= $[from_line]$ and _row_id < $[end_line]$"""
 			   ON (a.id = d.id)
 				  AND (d.xtype = 'U')
 				  AND (d.name <> 'dtproperties') 
-			  INNER JOIN  sys.all_objects c
+			 INNER JOIN  sys.all_objects c
 				ON d.id=c.object_id 
 					AND  schema_name(schema_id)='dbo'
 			 LEFT JOIN sys.extended_properties g
@@ -172,3 +183,33 @@ AND IDXC.Column_id=C.Column_id"""
 		if tablename is not None:
 			sqlcmd = sqlcmd + """ where lower(O.name)='%s'""" % tablename.lower()
 		return sqlcmd
+
+	async def connect(self):
+		"""
+		Note: pymssql is synchronous. For async support, consider using aioodbc.
+		This implementation uses threading for now.
+		"""
+		import asyncio
+		import pymssql
+		
+		dbdesc = self.dbdesc
+		# pymssql uses different parameter names
+		conn_params = {
+			'server': dbdesc.get('host', 'localhost'),
+			'user': dbdesc.get('user'),
+			'password': dbdesc.get('password'),
+			'database': dbdesc.get('db'),
+			'port': dbdesc.get('port', 1433)
+		}
+		# Remove None values
+		conn_params = {k: v for k, v in conn_params.items() if v is not None}
+		
+		# Use thread pool for synchronous pymssql
+		loop = asyncio.get_event_loop()
+		self.conn = await loop.run_in_executor(None, pymssql.connect, **conn_params)
+		self.dbname = dbdesc.get('db', '')
+
+	async def close(self):
+		import asyncio
+		loop = asyncio.get_event_loop()
+		await loop.run_in_executor(None, self.conn.close)

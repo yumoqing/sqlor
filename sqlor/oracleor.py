@@ -1,5 +1,17 @@
 from .sor import SQLor
 from .ddl_template_oracle import oracle_ddl_tmpl
+
+select_stmt = """
+select 
+	$[fields]$ 
+from 
+	$[tables]$ 
+$[whereclause]$
+$[groupbyclause]$
+$[havingclause]$
+$[orderbyclause]$
+"""
+
 class Oracleor(SQLor):
 	ddl_template = oracle_ddl_tmpl
 	db2modelTypeMapping = {
@@ -49,7 +61,7 @@ class Oracleor(SQLor):
 		if varname=='__mainsql__' :
 			return ''
 		return ':%s' % varname
-	
+
 	def dataConvert(self,dataList):
 		if type(dataList) == type({}):
 			return dataList
@@ -88,7 +100,7 @@ from USER_TAB_COMMENTS where table_type = 'TABLE'"""
 		if tablename is not None:
 			sqlcmd = sqlcmd + """ where lower(utc.table_name) = '%s'""" % tablename.lower()
 		return sqlcmd
-	
+
 	def fkSQL(self,tablename=None):
 		tablename = tablename.lower()
 		sqlcmd = """select
@@ -106,7 +118,7 @@ where
 		if tablename is not None:
 			sqlcmd = sqlcmd + """ and lower(uc.table_name)='%s'""" % tablename.lower()
 		return sqlcmd
-	
+
 	def pkSQL(self,tablename=None):
 		sqlcmd = """
 select
@@ -130,4 +142,33 @@ where a.index_name = b.index_name"""
 		if tablename is not None:
 			sqlcmd += """  and lower(a.table_name) = lower('%s')"""  % tablename.lower()
 		return sqlcmd
+
+	async def connect(self):
+		"""
+		Note: cx_Oracle is synchronous. Using thread pool for async support.
+		"""
+		import asyncio
+		import cx_Oracle
 		
+		dbdesc = self.dbdesc
+		# cx_Oracle connection string format
+		dsn = cx_Oracle.makedsn(
+			host=dbdesc.get('host', 'localhost'),
+			port=dbdesc.get('port', 1521),
+			service_name=dbdesc.get('service_name', dbdesc.get('sid', 'XE'))
+		)
+		
+		loop = asyncio.get_event_loop()
+		self.conn = await loop.run_in_executor(
+			None, 
+			cx_Oracle.connect, 
+			dbdesc.get('user'), 
+			dbdesc.get('password'), 
+			dsn
+		)
+		self.dbname = dbdesc.get('service_name', dbdesc.get('sid', ''))
+
+	async def close(self):
+		import asyncio
+		loop = asyncio.get_event_loop()
+		await loop.run_in_executor(None, self.conn.close)
