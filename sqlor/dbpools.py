@@ -137,23 +137,23 @@ class DBPools:
 			self._pools[name] = pool
 		self.e_except = None
 		sqlor = None
-		try:
-			async with pool.context() as sqlor:
+		async with pool.context() as sqlor:
+			try:
 				await sqlor.enter()
 				yield sqlor
+				if sqlor and sqlor.dataChanged:
+					await sqlor.commit()
 				await sqlor.exit()
-			if sqlor and sqlor.dataChanged:
-				await sqlor.commit()
-		except Exception as e:
-			self.e_except = e
-			cb = format_exc()
-			exception(f'sqlorContext():EXCEPTION{e}, {cb}')
-			try:
-				await sqlor.rollback()
-			except:
-				pass
-			await sqlor.exit()
-			raise e
+			except Exception as e:
+				self.e_except = e
+				cb = format_exc()
+				exception(f'sqlorContext():EXCEPTION{e}, {cb}')
+				try:
+					await sqlor.rollback()
+				except:
+					pass
+				await sqlor.exit()
+				raise e
 	
 	def get_exception(self):
 		return self.e_except
