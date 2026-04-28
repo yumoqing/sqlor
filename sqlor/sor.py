@@ -198,9 +198,9 @@ class SQLor(object):
 		"""
 		default it not support paging
 		"""
-		page = int(NS.get(paging['pagename'],1))
-		rows = int(NS.get(paging['rowsname'],80))
-		sort = NS.get(paging.get('sortname','sort'),None)
+		page = int(NS.get('page', 1))
+		rows = int(NS.get('pagerows', 80))
+		sort = NS.get('sort', 'id')
 		if isinstance(sort, list):
 			sort = ','.join(sort)
 		if not sort:
