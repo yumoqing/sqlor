@@ -608,13 +608,13 @@ class SQLor(object):
 		sql = 'insert into %s.%s (%s) values (%s)' % (self.dbname, tablename,fns,vfns)
 		rf = RegisterFunction()
 		rfname = f'{self.dbname}:{tablename}:c:before'
-		self.dbpools.dispatch(rfname, ns)
+		await self.dbpools.dispatch(rfname, ns)
 		ret = await rf.exe(rfname, ns)
 		if isinstance(ret, dict):
 			ns.update(ret)
 		r = await self.execute(sql,ns.copy())
 		rfname = f'{self.dbname}:{tablename}:c:after'
-		self.dbpools.dispatch(rfname, ns)
+		await self.dbpools.dispatch(rfname, ns)
 		await rf.exe(rfname, ns)
 		return r
 
@@ -660,13 +660,13 @@ class SQLor(object):
 					u_str,c_str)
 		rf = RegisterFunction()
 		rfname = f'{self.dbname}:{tablename}:u:before'
-		self.dbpools.dispatch(rfname, ns)
+		await self.dbpools.dispatch(rfname, ns)
 		ret = await rf.exe(rfname, ns)
 		if isinstance(ret, dict):
 			ns.update(ret)
 		r = await self.execute(sql, ns.copy())
 		rfname = f'{self.dbname}:{tablename}:u:after'
-		self.dbpools.dispatch(rfname, ns)
+		await self.dbpools.dispatch(rfname, ns)
 		await rf.exe(rfname, ns)
 		return r
 
@@ -684,7 +684,7 @@ class SQLor(object):
 			ns.update(ret)
 		r = await self.execute(sql, ns)
 		rfname = f'{self.dbname}:{tablename}:d:after'
-		self.dbpools.dispatch(rfname, ns)
+		await self.dbpools.dispatch(rfname, ns)
 		ns = await rf.exe(rfname, ns)
 		return r
 
