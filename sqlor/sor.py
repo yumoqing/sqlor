@@ -72,6 +72,9 @@ def readsql(fn):
 	return b
 
 class SQLor(object):
+	"""
+	self.dbpools was set by DBPools
+	"""
 	def __init__(self,dbdesc=None,sqltp = '$[',sqlts = ']$',sqlvp = '${',sqlvs = '}$'):
 		self.conn = None
 		self.cur = None
@@ -605,11 +608,14 @@ class SQLor(object):
 		sql = 'insert into %s.%s (%s) values (%s)' % (self.dbname, tablename,fns,vfns)
 		rf = RegisterFunction()
 		rfname = f'{self.dbname}:{tablename}:c:before'
+		self.dbpools.dispatch(rfname, ns)
 		ret = await rf.exe(rfname, ns)
 		if isinstance(ret, dict):
 			ns.update(ret)
 		r = await self.execute(sql,ns.copy())
-		await rf.exe(f'{self.dbname}:{tablename}:c:after', ns)
+		rfname = f'{self.dbname}:{tablename}:c:after'
+		self.dbpools.dispatch(rfname, ns)
+		await rf.exe(rfname, ns)
 		return r
 
 	async def R(self,tablename,ns,filters=None):
@@ -653,11 +659,15 @@ class SQLor(object):
 		sql = 'update %s.%s set %s where %s' % (self.dbname, tablename,
 					u_str,c_str)
 		rf = RegisterFunction()
-		ret = await rf.exe(f'{self.dbname}:{tablename}:u:before',ns)
+		rfname = f'{self.dbname}:{tablename}:u:before'
+		self.dbpools.dispatch(rfname, ns)
+		ret = await rf.exe(rfname, ns)
 		if isinstance(ret, dict):
 			ns.update(ret)
 		r = await self.execute(sql, ns.copy())
-		await rf.exe(f'{self.dbname}:{tablename}:u:after',ns)
+		rfname = f'{self.dbname}:{tablename}:u:after'
+		self.dbpools.dispatch(rfname, ns)
+		await rf.exe(rfname, ns)
 		return r
 
 	async def D(self,tablename, ns):
@@ -668,11 +678,14 @@ class SQLor(object):
 		c_str = ' and '.join(c)
 		sql = 'delete from %s.%s where %s' % (self.dbname, tablename,c_str)
 		rf = RegisterFunction()
-		ret = await rf.exe(f'{self.dbname}:{tablename}:d:before', ns)
+		rfname = f'{self.dbname}:{tablename}:d:before'
+		ret = await rf.exe(rfname, ns)
 		if isinstance(ret, dict):
 			ns.update(ret)
 		r = await self.execute(sql, ns)
-		ns = await rf.exe(f'{self.dbname}:{tablename}:d:after', ns)
+		rfname = f'{self.dbname}:{tablename}:d:after'
+		self.dbpools.dispatch(rfname, ns)
+		ns = await rf.exe(rfname, ns)
 		return r
 
 	async def connect(self):

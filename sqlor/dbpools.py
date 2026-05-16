@@ -14,6 +14,7 @@ from appPublic.myjson import loadf
 from appPublic.jsonConfig import getConfig
 from appPublic.rc4 import unpassword
 from appPublic.log import exception
+from appPublic.event_dispatcher import EventDispatcher
 
 import threading
 from .sor import SQLor
@@ -103,10 +104,11 @@ class SqlorPool:
 			
 
 @SingletonDecorator
-class DBPools:
+class DBPools(EventDispatcher):
 	def __init__(self,databases={},max_connect=100,loop=None):
 		if loop is None:
 			loop = get_event_loop()
+		super().__init__(self)
 		self.loop = loop
 		self.max_connect = max_connect
 		self._pools = {}
@@ -139,6 +141,7 @@ class DBPools:
 		sqlor = None
 		async with pool.context() as sqlor:
 			try:
+				sqlor.dbpools = self
 				await sqlor.enter()
 				yield sqlor
 				if sqlor and sqlor.dataChanged:
