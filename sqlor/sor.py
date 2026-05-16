@@ -666,6 +666,7 @@ class SQLor(object):
 			ns.update(ret)
 		r = await self.execute(sql, ns.copy())
 		rfname = f'{self.dbname}:{tablename}:u:after'
+		debug(f'Event({rfname}) dispatching with data:{ns}...')
 		await self.dbpools.dispatch(rfname, ns)
 		await rf.exe(rfname, ns)
 		return r
