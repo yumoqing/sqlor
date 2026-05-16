@@ -108,7 +108,7 @@ class DBPools(EventDispatcher):
 	def __init__(self,databases={},max_connect=100,loop=None):
 		if loop is None:
 			loop = get_event_loop()
-		super().__init__(self)
+		super().__init__()
 		self.loop = loop
 		self.max_connect = max_connect
 		self._pools = {}
