@@ -680,6 +680,7 @@ class SQLor(object):
 		sql = 'delete from %s.%s where %s' % (self.dbname, tablename,c_str)
 		rf = RegisterFunction()
 		rfname = f'{self.dbname}:{tablename}:d:before'
+		await self.dbpools.dispatch(rfname, ns)
 		ret = await rf.exe(rfname, ns)
 		if isinstance(ret, dict):
 			ns.update(ret)
