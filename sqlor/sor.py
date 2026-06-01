@@ -462,10 +462,8 @@ class SQLor(object):
 		if 'page' in ns.keys():
 			cnt = await self.record_count(sql, ns)
 			rows = await self.pagingdata(sql, ns)
-			return {
-				'total': cnt,
-				'rows': rows
-			}
+			d = DictObject(total=cnt, rows=rows)
+			return d
 		ret = []
 		async for r in self._get_data(sql, ns):
 			ret.append(r)
@@ -478,10 +476,8 @@ class SQLor(object):
 
 		total = await self.record_count(sql,ns)
 		rows = await self.pagingdata(sql,ns)
-		return {
-			'total':total,
-			'rows':rows
-		}
+		d = DictObject(total=total, rows=rows)
+		return d
 
 	async def tables(self):
 		sqlstring = self.tablesSQL()
@@ -638,10 +634,7 @@ class SQLor(object):
 				ns['sort'] = desc['summary'][0]['primary'][0]
 			total = await self.record_count(sql, ns)
 			rows = await self.pagingdata(sql,ns)
-			return {
-				'total':total,
-				'rows':rows
-			}
+			return DictObject(total=total, rows=rows)
 		else:
 			if ns.get('sort'):
 				sql = self.sortSQL(sql, ns)
