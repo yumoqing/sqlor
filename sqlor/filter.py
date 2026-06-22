@@ -131,7 +131,7 @@ class DBFilter(object):
 			return f"{fj['field']} {op}"
 
 		var = fj.get('var')
-		if var and not var in ns.keys():
+		if var and (not var in ns.keys() or ns[var] == '' or ns[var] is None):
 			return None
 			
 		if 'const' in keys:
@@ -140,6 +140,12 @@ class DBFilter(object):
 			self.consts.update({name:fj.get('const')})
 			sql = '%s %s ${%s}$' % (fj.get('field'), fj.get('op'), name)
 			return sql
+		
+		# LIKE 自动加 %value%
+		if op == 'LIKE':
+			val = ns.get(var)
+			if val and not val.startswith('%'):
+				ns[var] = f'%{val}%'
 		
 		sql = '%s %s ${%s}$' % (fj.get('field'), fj.get('op'), fj.get('var'))
 		return sql
