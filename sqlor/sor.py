@@ -645,6 +645,9 @@ class SQLor(object):
 		fields = [ i['name'] for i in desc['fields']]
 		condi = [ i for i in desc['summary'][0]['primary']]
 		newData = [ i for i in ns.keys() if i not in condi and i in fields]
+		if not newData:
+			debug(f'sor.U({tablename}): no fields to update (only primary keys in data), skip')
+			return {'affected_rows': 0, 'status': 'skipped'}
 		c = [ '%s = ${%s}$' % (i,i) for i in condi ]
 		u = [ '%s = ${%s}$' % (i,i) for i in newData ]
 		c_str = ' and '.join(c)
