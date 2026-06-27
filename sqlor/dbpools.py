@@ -126,13 +126,10 @@ class SqlorPool:
 			yielded_sqlor.use_at = time.time()
 			try:
 				yield yielded_sqlor.sqlor
+			finally:
+				# Always reset state, even on CancelledError (BaseException in Python 3.8+)
 				yielded_sqlor.used = False
 				yielded_sqlor.use_at = time.time()
-				return
-			except Exception as e:
-				yielded_sqlor.used = False
-				yielded_sqlor.use_at = time.time()
-				raise e
 			
 
 @SingletonDecorator
@@ -178,17 +175,23 @@ class DBPools(EventDispatcher):
 				yield sqlor
 				if sqlor and sqlor.dataChanged:
 					await sqlor.commit()
-				await sqlor.exit()
-			except Exception as e:
+			except BaseException as e:
 				self.e_except = e
-				cb = format_exc()
-				exception(f'sqlorContext():EXCEPTION{e}, {cb}')
+				if not isinstance(e, asyncio.CancelledError):
+					cb = format_exc()
+					exception(f'sqlorContext():EXCEPTION{e}, {cb}')
 				try:
 					await sqlor.rollback()
 				except:
 					pass
-				await sqlor.exit()
-				raise e
+				raise
+			finally:
+				# Always call exit(), even on CancelledError (BaseException in Python 3.8+)
+				if sqlor:
+					try:
+						await sqlor.exit()
+					except:
+						pass
 	
 	def get_exception(self):
 		return self.e_except
