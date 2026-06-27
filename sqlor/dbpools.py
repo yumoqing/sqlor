@@ -47,7 +47,7 @@ def sqlorFactory(dbdesc):
 		return None
 	k = findSubclass(driver,SQLor)
 	if k is None:
-		return SQLor(dbdesc=dbdesc)
+		return SQLor(dbdesc=dbdesc.kwargs)
 	return k(dbdesc=dbdesc.kwargs)
 
 class SqlorPool:
@@ -110,27 +110,70 @@ class SqlorPool:
 			await sor.exit()
 			return False
 
+	def _discard_sqlor(self, entry):
+		"""Remove a broken connection entry from the pool and clean up."""
+		if entry in self.sqlors:
+			self.sqlors.remove(entry)
+		asyncio.ensure_future(self._del_sqlor(entry.sqlor))
+
 	@asynccontextmanager
 	async def context(self):
 		self._cleanup_idle()
 		async with self.sema:
-			sqlors = [s for s in self.sqlors]
 			yielded_sqlor = None
+			# Try to find a healthy idle connection
+			sqlors = [s for s in self.sqlors if not s.used]
 			for s in sqlors:
-				if not s.used:
+				ok = await self._check_alive(s.sqlor)
+				if ok:
 					yielded_sqlor = s
-					break  # Take first available connection without testing
+					break
+				else:
+					debug(f'SqlorPool.context: discarding dead connection')
+					self._discard_sqlor(s)
+
 			if not yielded_sqlor:
 				yielded_sqlor = await self._new_sqlor()
 			yielded_sqlor.used = True
 			yielded_sqlor.use_at = time.time()
 			try:
 				yield yielded_sqlor.sqlor
+			except (RuntimeError, OSError) as e:
+				err_msg = str(e)
+				if 'closed' in err_msg or 'handler is closed' in err_msg:
+					# Connection died during use — discard it from pool
+					self._discard_sqlor(yielded_sqlor)
+					yielded_sqlor = None  # prevent finally from resetting
+				raise
 			finally:
 				# Always reset state, even on CancelledError (BaseException in Python 3.8+)
-				yielded_sqlor.used = False
-				yielded_sqlor.use_at = time.time()
-			
+				if yielded_sqlor is not None:
+					yielded_sqlor.used = False
+					yielded_sqlor.use_at = time.time()
+
+	async def _check_alive(self, sor):
+		"""Lightweight check: can we still talk to the DB on this connection?"""
+		try:
+			conn = sor.conn
+			if conn is None:
+				return False
+			# aiomysql: check transport
+			writer = getattr(conn, '_writer', None)
+			if writer is not None:
+				transport = getattr(writer, 'transport', None)
+				if transport is not None and transport.is_closing():
+					return False
+			# Try a lightweight ping
+			await sor.enter()
+			await sor.execute(sor.test_sqlstr, {})
+			await sor.exit()
+			return True
+		except Exception:
+			try:
+				await sor.exit()
+			except:
+				pass
+			return False
 
 @SingletonDecorator
 class DBPools(EventDispatcher):
