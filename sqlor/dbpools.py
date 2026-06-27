@@ -13,7 +13,7 @@ from appPublic.Singleton import SingletonDecorator
 from appPublic.myjson import loadf
 from appPublic.jsonConfig import getConfig
 from appPublic.rc4 import unpassword
-from appPublic.log import exception
+from appPublic.log import exception, debug
 from appPublic.event_dispatcher import EventDispatcher
 
 import threading
@@ -24,6 +24,16 @@ from .sqlite3or import SQLite3or
 from .aiosqliteor import Aiosqliteor
 from .mysqlor import MySqlor
 from .aiopostgresqlor import AioPostgresqlor
+
+# Global semaphore to limit total connections across all pools
+_GLOBAL_CONN_LIMIT = 400  # Leave headroom below MariaDB max_connections=500
+_global_conn_sema = None
+
+def _get_global_sema():
+	global _global_conn_sema
+	if _global_conn_sema is None:
+		_global_conn_sema = asyncio.Semaphore(_GLOBAL_CONN_LIMIT)
+	return _global_conn_sema
 
 def sqlorFactory(dbdesc):
 	driver = dbdesc.get('driver',dbdesc)
@@ -41,23 +51,33 @@ def sqlorFactory(dbdesc):
 	return k(dbdesc=dbdesc.kwargs)
 
 class SqlorPool:
+	# Idle timeout: connections unused for this long will be closed
+	IDLE_TIMEOUT = 300  # 5 minutes
+
 	def __init__(self, create_func, maxconn=100):
 		self.sema = asyncio.Semaphore(maxconn)
 		self.create_func = create_func
 		self.sqlors = []
 	
 	async def _new_sqlor(self):
-		sqlor = await self.create_func()
-		await sqlor.connect()
-		x = DictObject(**{
-			'used': True,
-			'use_at': time.time(),
-			'sqlor':sqlor
-		})
-		self.sqlors.append(x)
-		return x
+		global_sema = _get_global_sema()
+		await global_sema.acquire()
+		try:
+			sqlor = await self.create_func()
+			await sqlor.connect()
+			x = DictObject(**{
+				'used': True,
+				'use_at': time.time(),
+				'sqlor':sqlor
+			})
+			self.sqlors.append(x)
+			return x
+		except Exception:
+			global_sema.release()
+			raise
 
 	async def _del_sqlor(self, sor):
+		global_sema = _get_global_sema()
 		try:
 			await sor.exit()
 		except:
@@ -66,6 +86,19 @@ class SqlorPool:
 			await sor.close()
 		except:
 			pass
+		global_sema.release()
+
+	def _cleanup_idle(self):
+		"""Remove idle connections that exceed IDLE_TIMEOUT."""
+		now = time.time()
+		to_remove = []
+		for s in self.sqlors:
+			if not s.used and (now - s.use_at) > self.IDLE_TIMEOUT:
+				to_remove.append(s)
+		for s in to_remove:
+			self.sqlors = [x for x in self.sqlors if x != s]
+			# Fire-and-forget close (best effort)
+			asyncio.ensure_future(self._del_sqlor(s.sqlor))
 
 	async def test_sqlor(self, sor):
 		try:
@@ -79,6 +112,7 @@ class SqlorPool:
 
 	@asynccontextmanager
 	async def context(self):
+		self._cleanup_idle()
 		async with self.sema:
 			sqlors = [s for s in self.sqlors]
 			yielded_sqlor = None
@@ -97,9 +131,11 @@ class SqlorPool:
 			try:
 				yield yielded_sqlor.sqlor
 				yielded_sqlor.used = False
+				yielded_sqlor.use_at = time.time()
 				return
 			except Exception as e:
 				yielded_sqlor.used = False
+				yielded_sqlor.use_at = time.time()
 				raise e
 			
 
