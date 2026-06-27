@@ -118,12 +118,8 @@ class SqlorPool:
 			yielded_sqlor = None
 			for s in sqlors:
 				if not s.used:
-					flg = await self.test_sqlor(s.sqlor)
-					if flg:
-						yielded_sqlor = s
-					else:
-						await self._del_sqlor(s.sqlor)
-						self.sqlors = [ x for x in self.sqlors if x != s ]
+					yielded_sqlor = s
+					break  # Take first available connection without testing
 			if not yielded_sqlor:
 				yielded_sqlor = await self._new_sqlor()
 			yielded_sqlor.used = True
