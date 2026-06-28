@@ -53,6 +53,8 @@ def sqlorFactory(dbdesc):
 class SqlorPool:
 	# Idle timeout: connections unused for this long will be closed
 	IDLE_TIMEOUT = 300  # 5 minutes
+	# Only check alive if connection has been idle longer than this
+	CHECK_ALIVE_THRESHOLD = 30  # 30 seconds
 
 	def __init__(self, create_func, maxconn=100):
 		self.sema = asyncio.Semaphore(maxconn)
@@ -123,7 +125,13 @@ class SqlorPool:
 			yielded_sqlor = None
 			# Try to find a healthy idle connection
 			sqlors = [s for s in self.sqlors if not s.used]
+			now = time.time()
 			for s in sqlors:
+				# Skip check_alive if connection was used recently
+				idle_time = now - s.use_at
+				if idle_time < self.CHECK_ALIVE_THRESHOLD:
+					yielded_sqlor = s
+					break
 				ok = await self._check_alive(s.sqlor)
 				if ok:
 					yielded_sqlor = s
