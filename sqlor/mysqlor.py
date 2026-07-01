@@ -159,6 +159,7 @@ WHERE
 		await self.conn.close()
 
 	async def enter(self):
+		await self.conn.commit()
 		self.cur = await self.conn.cursor()
 		
 	async def exit(self):
