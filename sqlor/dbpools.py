@@ -205,10 +205,14 @@ class DBPools(EventDispatcher):
 		self.databases[name] = desc
 
 	async def getSqlor(self, name):
-		desc = self.databases.get(name)
-		sor = sqlorFactory(desc)
-		await sor.connect()
-		return sor
+		try:
+			desc = self.databases.get(name)
+			sor = sqlorFactory(desc)
+			await sor.connect()
+			return sor
+		except Exception as e:
+			exception(f'{name=}, {e}')
+			raise e
 
 	@asynccontextmanager
 	async def sqlorContext(self, name):
