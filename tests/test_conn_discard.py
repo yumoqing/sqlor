@@ -209,10 +209,59 @@ async def test_normal_usage_no_discard():
     print("PASS: Normal usage - connection stays in pool")
 
 
+async def test_mysql_error_during_use():
+    """MySQL OperationalError/InterfaceError during use should discard connection."""
+    global call_count
+    call_count = 0
+
+    factory = make_fake_sor([True])
+    pool = SqlorPool(factory)
+
+    mysql_errors = [
+        Exception("(0, 'Not connected')"),
+        Exception("(2014, 'Command Out of Sync')"),
+        Exception("Lost connection to MySQL server"),
+        Exception("Connection reset by peer"),
+        Exception("Server disconnected"),
+    ]
+
+    for err in mysql_errors:
+        try:
+            async with pool.context() as sor:
+                raise err
+        except Exception:
+            pass
+        assert len(pool.sqlors) == 0, f"{err} should be discarded"
+        pool = SqlorPool(make_fake_sor([True]))
+
+    print("PASS: MySQL errors during use -> connection discarded")
+
+
+async def test_business_error_not_discarded():
+    """Normal business logic errors should NOT discard connection."""
+    global call_count
+    call_count = 0
+
+    factory = make_fake_sor([True])
+    pool = SqlorPool(factory)
+
+    try:
+        async with pool.context() as sor:
+            raise ValueError("business logic error")
+    except ValueError:
+        pass
+
+    assert len(pool.sqlors) == 1, "Business error should not discard connection"
+    assert pool.sqlors[0].used == False
+    print("PASS: Business error - connection stays in pool")
+
+
 async def main():
     await test_normal_usage_no_discard()
     await test_discard_dead_connection()
     await test_runtime_error_during_use()
+    await test_mysql_error_during_use()
+    await test_business_error_not_discarded()
     print("\n=== ALL TESTS PASSED ===")
 
 

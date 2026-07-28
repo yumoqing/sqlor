@@ -153,6 +153,16 @@ class SqlorPool:
 					self._discard_sqlor(yielded_sqlor)
 					yielded_sqlor = None  # prevent finally from resetting
 				raise
+			except Exception as e:
+				err_msg = str(e)
+				if any(x in err_msg for x in (
+					'Not connected', 'Command Out of Sync',
+					'Lost connection', 'Connection reset',
+					'Server disconnected',
+				)):
+					self._discard_sqlor(yielded_sqlor)
+					yielded_sqlor = None
+				raise
 			finally:
 				# Always reset state, even on CancelledError (BaseException in Python 3.8+)
 				if yielded_sqlor is not None:
