@@ -26,7 +26,7 @@ from .mysqlor import MySqlor
 from .aiopostgresqlor import AioPostgresqlor
 
 # Global semaphore to limit total connections across all pools
-_GLOBAL_CONN_LIMIT = 400  # Leave headroom below MariaDB max_connections=500
+_GLOBAL_CONN_LIMIT = 1000  # Leave headroom below MariaDB max_connections=500
 _global_conn_sema = None
 
 def _get_global_sema():
@@ -56,7 +56,7 @@ class SqlorPool:
 	# Only check alive if connection has been idle longer than this
 	CHECK_ALIVE_THRESHOLD = 30  # 30 seconds
 
-	def __init__(self, create_func, maxconn=100):
+	def __init__(self, create_func, maxconn=200):
 		self.sema = asyncio.Semaphore(maxconn)
 		self.create_func = create_func
 		self.sqlors = []
