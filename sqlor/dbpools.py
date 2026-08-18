@@ -240,6 +240,12 @@ class DBPools(EventDispatcher):
 				yield sqlor
 				if sqlor and sqlor.dataChanged:
 					await sqlor.commit()
+				else:
+					# SELECT-only 事务也要结束：rollback 释放 MDL 锁和 MVCC 快照。
+					# 否则连接回池后事务未提交，持有 MDL_SHARED 阻塞后续 DDL/元数据操作，
+					# 而 lock_wait_timeout 默认 86400(24h)，可卡死 poller 达数小时。
+					# (2026-08 生产事故：poller 停摆 15.7h，根因即此)
+					await sqlor.rollback()
 			except BaseException as e:
 				self.e_except = e
 				if not isinstance(e, asyncio.CancelledError):
