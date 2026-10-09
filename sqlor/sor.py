@@ -335,6 +335,11 @@ class SQLor(object):
 	async def execute(self, sql, value):
 		sqltype = self.getSqlType(sql)
 		cur = self.cursor()
+		if cur is None:
+			# 连接未 enter（或已 exit）。旧实现此处抛 AttributeError('NoneType'...'execute')，
+			# 语义隐晦且不匹配池的丢弃规则 → 坏连接被反复复用（2026-10-09 排查）。
+			raise RuntimeError(
+				'sqlor: cursor is None (connection not entered or already exited)')
 		ret = await self.runVarSQL(cur, sql, value)
 		if sqltype == 'dml':
 			self.dataChanged = True

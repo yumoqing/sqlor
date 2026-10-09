@@ -155,11 +155,32 @@ WHERE
 		self.dbname = dbdesc.get('db')
 
 	async def close(self):
-		await self.cursor.close()
+		try:
+			await self.cursor.close()
+		except Exception:
+			pass
 		await self.conn.close()
 
+	def _conn_alive(self):
+		"""底层连接是否仍可用（None / transport 已关闭 == 不可用）。"""
+		conn = self.conn
+		if conn is None:
+			return False
+		writer = getattr(conn, '_writer', None)
+		transport = getattr(writer, 'transport', None) if writer is not None else None
+		if transport is not None and transport.is_closing():
+			return False
+		return True
+
 	async def enter(self):
-		await self.conn.commit()
+		if not self._conn_alive():
+			await self.connect()
+		try:
+			await self.conn.commit()
+		except Exception:
+			# commit 时才发现连接已死 → 重连一次再 commit
+			await self.connect()
+			await self.conn.commit()
 		self.cur = await self.conn.cursor()
 		
 	async def exit(self):

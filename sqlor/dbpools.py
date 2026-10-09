@@ -130,8 +130,14 @@ class SqlorPool:
 				# Skip check_alive if connection was used recently
 				idle_time = now - s.use_at
 				if idle_time < self.CHECK_ALIVE_THRESHOLD:
-					yielded_sqlor = s
-					break
+					# 便宜探活（无 DB 往返）：transport 已关闭的连接绝不发出。旧实现此分支
+					# 直接放行，坏 socket 交付后查询报隐晦错误（2026-10-09 排查）。
+					if self._transport_ok(s.sqlor):
+						yielded_sqlor = s
+						break
+					debug('SqlorPool.context: discarding dead connection (transport closed)')
+					self._discard_sqlor(s)
+					continue
 				ok = await self._check_alive(s.sqlor)
 				if ok:
 					yielded_sqlor = s
@@ -159,6 +165,7 @@ class SqlorPool:
 					'Not connected', 'Command Out of Sync',
 					'Lost connection', 'Connection reset',
 					'Server disconnected',
+					'cursor is None',
 				)):
 					self._discard_sqlor(yielded_sqlor)
 					yielded_sqlor = None
@@ -168,6 +175,22 @@ class SqlorPool:
 				if yielded_sqlor is not None:
 					yielded_sqlor.used = False
 					yielded_sqlor.use_at = time.time()
+
+	def _transport_ok(self, sor):
+		"""便宜探活：只查 transport 是否已关闭，不做 DB 往返（高频分支用）。"""
+		try:
+			conn = sor.conn
+			if conn is None:
+				return False
+			writer = getattr(conn, '_writer', None)
+			if writer is None:
+				return True
+			transport = getattr(writer, 'transport', None)
+			if transport is None:
+				return True
+			return not transport.is_closing()
+		except Exception:
+			return True   # 探活本身出错不误杀，交给完整探活
 
 	async def _check_alive(self, sor):
 		"""Lightweight check: can we still talk to the DB on this connection?"""
