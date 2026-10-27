@@ -12,7 +12,6 @@ from appPublic.dictObject import DictObject
 from appPublic.Singleton import SingletonDecorator
 from appPublic.myjson import loadf
 from appPublic.jsonConfig import getConfig
-from appPublic.rc4 import unpassword
 from appPublic.log import exception, debug
 from appPublic.event_dispatcher import EventDispatcher
 
