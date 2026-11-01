@@ -63,6 +63,7 @@ class SqlorPool:
 	async def _new_sqlor(self):
 		global_sema = _get_global_sema()
 		await global_sema.acquire()
+		sqlor = None
 		try:
 			sqlor = await self.create_func()
 			await sqlor.connect()
@@ -73,7 +74,13 @@ class SqlorPool:
 			})
 			self.sqlors.append(x)
 			return x
-		except Exception:
+		except BaseException:
+			# 取消/超时也必须还槽，否则全局连接额度被慢慢吃掉（复审实测 1000→999）
+			try:
+				if sqlor is not None:
+					await sqlor.close()
+			except BaseException:
+				pass
 			global_sema.release()
 			raise
 
@@ -145,7 +152,14 @@ class SqlorPool:
 					debug('SqlorPool.context: discarding dead connection (transport closed)')
 					self._discard_sqlor(s)
 					continue
-				ok = await self._check_alive(s.sqlor)
+				try:
+					ok = await self._check_alive(s.sqlor)
+				except BaseException:
+					# 探活被取消（长任务超时/取消是高频路径）或抛 BaseException：
+					# 必须把预留标记复位，否则该条目永久 used=True —— 不复用、_cleanup_idle 跳过、
+					# 连接不关、global sema 槽不还（2026-11-01 复审实测：取消一次即泄漏一条）。
+					s.used = False
+					raise
 				if ok:
 					yielded_sqlor = s
 					break

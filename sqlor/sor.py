@@ -341,7 +341,10 @@ class SQLor(object):
 			raise RuntimeError(
 				'sqlor: cursor is None (connection not entered or already exited)')
 		ret = await self.runVarSQL(cur, sql, value)
-		if sqltype == 'dml':
+		# 2026-11-01：不能只认 'dml'。getSqlType 对 call/replace into/CTE 写/带注释前缀的
+		# insert 都返回 'ddl'，而这些是会改数据的语句；只置 dml 会让它们被出口 rollback 掉
+		# （MySQL 上 DDL 隐式提交侥幸无害，其它驱动/存储过程就是静默丢写）。
+		if sqltype != 'qry':
 			self.dataChanged = True
 		return ret
 
@@ -374,7 +377,8 @@ class SQLor(object):
 		cur = self.cursor()
 		markedSQL, _ = self.maskingSQL(sql,{})
 		datas = [ self.dataConvert(d) for d in values ]
-		await self.cur_exectutemany(cur, markedSQL, datas)
+		await self.cur_executemany(cur, markedSQL, datas)
+		self.dataChanged = True
 	
 	def pivotSQL(self,tablename,rowFields,columnFields,valueFields):
 		def maxValue(columnFields,valueFields,cfvalues):
@@ -589,6 +593,7 @@ class SQLor(object):
 		else:
 			self.conn.rollback()
 		self.dataChanged = False
+		self.datachanged = False   # 与 commit 一致：旧名也归零
 
 	async def commit(self):
 		if inspect.iscoroutinefunction(self.conn.commit):

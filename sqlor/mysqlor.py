@@ -159,37 +159,41 @@ WHERE
 		"""真正关闭游标与连接（2026-11-01 修复：旧实现必抛，连接从未被关闭）。
 
 		旧代码两处错：
-		  `await self.cursor.close()` —— self.cursor 是 SQLor 的**方法**，不是游标对象
-		      （AttributeError 被 except 吞掉，游标根本没关）；
+		  `await self.cursor.close()` —— self.cursor 是 SQLor 的**方法**，不是游标对象；
 		  `await self.conn.close()`   —— aiomysql 的 Connection.close() 是**同步函数**，
-		      await None 抛 TypeError，且异常不被吞 → 调用方（池的 _del_sqlor）只能
-		      靠 GC 回收，长连接会长期占用 MySQL 线程。
-		现在：先关游标（用 self.cur），再同步关连接（若是可等待对象才 await），全程不抛。
+		      await None 抛 TypeError，且异常不被吞 → 连接只靠 GC 回收。
+		现在：先关游标（用 self.cur），再同步关连接（可等待才 await）。
+		取消安全：关游标时被 CancelledError 打断，也**保证** conn 被关闭，然后把取消重新抛出。
 		"""
 		cur = getattr(self, 'cur', None)
+		_pending = None
 		if cur is not None:
 			try:
 				res = cur.close()
 				if inspect.isawaitable(res):
 					await res
-			except Exception:
-				pass
-			try:
-				self.cur = None
-			except Exception:
-				pass
+			except BaseException as _e:      # 取消/超时也不能漏关 conn
+				_pending = _e
+			finally:
+				try:
+					self.cur = None
+				except Exception:
+					pass
 		conn = getattr(self, 'conn', None)
 		if conn is not None:
 			try:
 				res = conn.close()
 				if inspect.isawaitable(res):
 					await res
-			except Exception:
+			except BaseException:
 				pass
-			try:
-				self.conn = None
-			except Exception:
-				pass
+			finally:
+				try:
+					self.conn = None
+				except Exception:
+					pass
+		if _pending is not None:
+			raise _pending
 
 	def _conn_alive(self):
 		"""底层连接是否仍可用（None / transport 已关闭 == 不可用）。"""
