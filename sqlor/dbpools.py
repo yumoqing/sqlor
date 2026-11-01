@@ -126,6 +126,14 @@ class SqlorPool:
 			sqlors = [s for s in self.sqlors if not s.used]
 			now = time.time()
 			for s in sqlors:
+				# ⚠️ 原子预留（2026-11-01）：旧实现「先选 not used → await 探活 → 最后置
+				# used=True」两步之间有挂起，两个协程会拿到同一个 sqlor/同一条 cursor：
+				# 一方 exit() 关游标后，另一方长任务末尾写就抛 `Cursor closed`；共享游标下
+				# execute/fetch 交错还可能串到别的项目/任务的行（多租户数据污染）。
+				# 这里先占位（无 await，天然原子），再做可能挂起的探活；失败才丢弃。
+				if s.used:
+					continue
+				s.used = True
 				# Skip check_alive if connection was used recently
 				idle_time = now - s.use_at
 				if idle_time < self.CHECK_ALIVE_THRESHOLD:

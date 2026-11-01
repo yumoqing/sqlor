@@ -595,7 +595,8 @@ class SQLor(object):
 			await self.conn.commit()
 		else:
 			self.conn.commit()
-		self.datachanged = False
+		self.datachanged = False   # 兼容旧名（历史拼写，勿删）
+		self.dataChanged = False   # 2026-11-01 修复：拼写错误导致标志永不归零
 
 	async def I(self,tablename):
 		return await self.getTableDesc(tablename)

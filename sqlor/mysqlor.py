@@ -1,5 +1,6 @@
 # -*- coding:utf8 -*-
 from appPublic.argsConvert import ArgsConvert,ConditionConvert
+import inspect
 import aiomysql
 from .sor import SQLor
 from .ddl_template_mysql import mysql_ddl_tmpl
@@ -155,11 +156,40 @@ WHERE
 		self.dbname = dbdesc.get('db')
 
 	async def close(self):
-		try:
-			await self.cursor.close()
-		except Exception:
-			pass
-		await self.conn.close()
+		"""真正关闭游标与连接（2026-11-01 修复：旧实现必抛，连接从未被关闭）。
+
+		旧代码两处错：
+		  `await self.cursor.close()` —— self.cursor 是 SQLor 的**方法**，不是游标对象
+		      （AttributeError 被 except 吞掉，游标根本没关）；
+		  `await self.conn.close()`   —— aiomysql 的 Connection.close() 是**同步函数**，
+		      await None 抛 TypeError，且异常不被吞 → 调用方（池的 _del_sqlor）只能
+		      靠 GC 回收，长连接会长期占用 MySQL 线程。
+		现在：先关游标（用 self.cur），再同步关连接（若是可等待对象才 await），全程不抛。
+		"""
+		cur = getattr(self, 'cur', None)
+		if cur is not None:
+			try:
+				res = cur.close()
+				if inspect.isawaitable(res):
+					await res
+			except Exception:
+				pass
+			try:
+				self.cur = None
+			except Exception:
+				pass
+		conn = getattr(self, 'conn', None)
+		if conn is not None:
+			try:
+				res = conn.close()
+				if inspect.isawaitable(res):
+					await res
+			except Exception:
+				pass
+			try:
+				self.conn = None
+			except Exception:
+				pass
 
 	def _conn_alive(self):
 		"""底层连接是否仍可用（None / transport 已关闭 == 不可用）。"""
