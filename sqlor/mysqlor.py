@@ -143,15 +143,24 @@ WHERE
 		return sqlcmd
 
 	async def connect(self):
-		"""
-		kwargs:
-			host:
-			port:
-			user:
-			password:
-			db:
+		"""建立连接。若已有连接，先关掉再建，避免重连时服务端连接泄漏。
+
+		历史坑（2026-11-02 生产事故）：enter() 在 commit 失败或连接判死时会调用本方法重连，
+		旧实现直接覆盖 self.conn，旧连接(可能仍占着服务端线程/事务锁)从此失去引用，
+		只能等进程退出才释放。取消/超时是高频路径，一次取消泄漏一条 → 一晚上打满
+		max_connections，全站 500。故此处必须显式关闭旧连接。
 		"""
 		dbdesc = self.dbdesc
+		old = getattr(self, 'conn', None)
+		if old is not None:
+			try:
+				res = old.close()
+				if inspect.isawaitable(res):
+					await res
+			except BaseException:
+				pass
+			finally:
+				self.conn = None
 		self.conn = await aiomysql.connect(**dbdesc)
 		self.dbname = dbdesc.get('db')
 
