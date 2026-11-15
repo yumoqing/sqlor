@@ -9,6 +9,17 @@ import codecs
 import re
 import json
 import inspect
+try:
+	from contextlib import aclosing          # py3.10+
+except ImportError:                          # pragma: no cover
+	from contextlib import asynccontextmanager
+
+	@asynccontextmanager
+	async def aclosing(thing):
+		try:
+			yield thing
+		finally:
+			await thing.aclose()
 from appPublic.worker import awaitify
 from appPublic.myImport import myImport
 from appPublic.jsonConfig import getConfig
@@ -340,6 +351,10 @@ class SQLor(object):
 			# 语义隐晦且不匹配池的丢弃规则 → 坏连接被反复复用（2026-10-09 排查）。
 			raise RuntimeError(
 				'sqlor: cursor is None (connection not entered or already exited)')
+		# 2026-11-15：记住本次执行**真正使用的游标**。_get_data 用它读 description，
+		# 而不是用自己开头捕获的引用——两者在并发 enter()/exit() 下可能不是同一对象，
+		# 读错对象会得到 description=None 的假故障（并掩盖真实的取消原因）。
+		self._cur_used = cur
 		ret = await self.runVarSQL(cur, sql, value)
 		# 2026-11-01：不能只认 'dml'。getSqlType 对 call/replace into/CTE 写/带注释前缀的
 		# insert 都返回 'ddl'，而这些是会改数据的语句；只置 dml 会让它们被出口 rollback 掉
@@ -349,26 +364,48 @@ class SQLor(object):
 		return ret
 
 	async def _get_data(self, sql, ns):
-		cur = self.cursor()
+		"""查询并逐行产出。**取消安全**（2026-11-15 生产事故根治）：
+
+		旧实现先 `cur = self.cursor()`，再 `await self.execute(...)`（内部又取一次
+		self.cur），最后读 `cur.description`。await 期间若发生 enter()/exit()（取消、
+		超时、上下文收尾关游标），外层 cur 就从未 execute 过 → pymysql 的 description
+		仍是 None → TypeError: 'NoneType' object is not iterable，把真正的取消原因盖掉
+		（下游还会把它判成「永久错误」冒泡人工）。
+
+		现在三件事：① 用 execute 实际使用的那条游标（self._cur_used）读结果；
+		② description 为 None 时抛带 SQL 与原因的明确异常；③ 用 _inflight 计数标记
+		「查询在飞」，供 exit() 判定连接是否可安全复用。
+		"""
 		sqltype = self.getSqlType(sql)
 		if sqltype != 'qry':
 			raise Exception('not select sql')
-		ret = await self.execute(sql, ns)
-		fields = [i[0].lower() for i in cur.description]
-		while True:
-			rec = await self.fetchone(cur)
-			if rec is None:
-				break
-			if rec is None:
-				break
-			if isinstance(rec, dict):
-				rec = rec.values()
-			dic = {}
-			for i in range(len(fields)):
-				v = db_type_2_py_type(rec[i])
-				dic.update({fields[i]: v})
-			dic = DictObject(**dic)
-			yield dic
+		self._inflight = getattr(self, '_inflight', 0) + 1
+		try:
+			await self.execute(sql, ns)
+			cur = getattr(self, '_cur_used', None)
+			if cur is None:
+				raise RuntimeError(
+					'sqlor: cursor is None after execute (sql=%s)' % (str(sql)[:120],))
+			desc = cur.description
+			if desc is None:
+				raise RuntimeError(
+					'sqlor: cursor closed during query (description is None; '
+					'sql=%s) —— 查询在飞行中被取消或连接已被关闭' % (str(sql)[:120],))
+			fields = [i[0].lower() for i in desc]
+			while True:
+				rec = await self.fetchone(cur)
+				if rec is None:
+					break
+				if isinstance(rec, dict):
+					rec = rec.values()
+				dic = {}
+				for i in range(len(fields)):
+					v = db_type_2_py_type(rec[i])
+					dic.update({fields[i]: v})
+				dic = DictObject(**dic)
+				yield dic
+		finally:
+			self._inflight = getattr(self, '_inflight', 1) - 1
 
 	async def executemany(self,sql,values):
 		sqltype = self.getSqlType(sql)
@@ -474,8 +511,10 @@ class SQLor(object):
 			d = DictObject(total=cnt, rows=rows)
 			return d
 		ret = []
-		async for r in self._get_data(sql, ns):
-			ret.append(r)
+		# 确定性关闭生成器：取消/异常时也不把「查询在飞」的游标留给 exit()（2026-11-15）
+		async with aclosing(self._get_data(sql, ns)) as _gen:
+			async for r in _gen:
+				ret.append(r)
 		return ret
 
 	async def sqlPaging(self,sql,ns):

@@ -140,6 +140,12 @@ class SqlorPool:
 				# 这里先占位（无 await，天然原子），再做可能挂起的探活；失败才丢弃。
 				if s.used:
 					continue
+				# 2026-11-15：中毒连接（exit 时仍有查询在飞 = 生成器被悬空）绝不复用：
+				# 复用它会把半途游标状态交给下一个请求，表现为 description=None / 串行数据。
+				if getattr(s.sqlor, '_poisoned', False):
+					debug('SqlorPool.context: discarding poisoned connection')
+					self._discard_sqlor(s)
+					continue
 				s.used = True
 				# Skip check_alive if connection was used recently
 				idle_time = now - s.use_at

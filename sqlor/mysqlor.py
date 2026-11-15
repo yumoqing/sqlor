@@ -225,8 +225,22 @@ WHERE
 			await self.connect()
 			await self.conn.commit()
 		self.cur = await self.conn.cursor()
+		# 进入新事务：中毒标记与在飞计数复位（中毒连接已由池丢弃，这里只兜底）
+		self._poisoned = False
+		self._inflight = 0
 		
 	async def exit(self):
+		# 2026-11-15：查询还在飞（_inflight>0）说明生成器被悬空——典型是协程被取消/超时。
+		# 此时关游标会把「取消」变成 description=None 的假故障，半途状态还可能被下一个
+		# 复用者看到。处置：标记中毒，连接交由连接池丢弃（不再复用）。
+		_inflight = getattr(self, '_inflight', 0) or 0
+		if _inflight > 0:
+			self._poisoned = True
+			try:
+				from appPublic.log import exception
+				exception('sqlor.exit: %d 个查询仍在飞行中（生成器未关闭），连接标记为中毒并丢弃' % _inflight)
+			except Exception:
+				pass
 		try:
 			await self.cur.fetchall()
 			await self.cur.close()
